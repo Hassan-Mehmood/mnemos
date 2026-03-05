@@ -1,18 +1,15 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
 
+from src.chats.chat_schemas import ChatRequest
 from src.chats.chat_service import ChatService
+from src.database.database import DBSession
 
 router = APIRouter(prefix="/chats", tags=["chats"])
 
 
-class ChatRequest(BaseModel):
-    message: str
-
-
 @router.post("/invoke")
-def invoke_chat(chat_request: ChatRequest):
+async def invoke_chat(chat_request: ChatRequest, conn: DBSession):
 
-    response = ChatService.invoke(chat_request.message)
+    response = await ChatService.invoke(conn, chat_request)
 
     return {"response": response}

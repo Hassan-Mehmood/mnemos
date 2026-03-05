@@ -7,7 +7,7 @@ class Chatbot:
     def __init__(self):
         self.client = OpenAI(api_key=get_settings().OPENAI_API_KEY)
 
-    def invoke(self, input: str):
+    def invoke(self, input: str, history: list[dict]) -> str:
         response = self.client.responses.create(
             model="gpt-4o-mini-2024-07-18",
             input=input,

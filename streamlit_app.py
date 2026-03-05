@@ -11,7 +11,9 @@ st.title("FastAPI Chat App")
 async def call_api(message: str):
     async with httpx.AsyncClient() as client:
         response = await client.post(
-            f"{BASE_URL}/chats/invoke", json={"message": message}, timeout=30
+            f"{BASE_URL}/chats/invoke",
+            json={"message": message, "chat_id": 1},
+            timeout=30,
         )
         response.raise_for_status()
         return response.json()
