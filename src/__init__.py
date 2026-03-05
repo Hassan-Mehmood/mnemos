@@ -1,8 +1,28 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
-app = FastAPI()
+from src.chats.router import router as chats_router
+from src.database.database import sessionmanager
 
 
-@app.get("/")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Function that handles startup and shutdown events.
+    """
+    yield
+    if sessionmanager._engine is not None:
+        # Close the DB connection
+        await sessionmanager.close()
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+app.include_router(chats_router)
+
+
+@app.get("/health")
 def root():
-    return {"message": "Hello World"}
+    return {"message": "Ok"}
