@@ -14,7 +14,11 @@ class ChatRepository:
 
     @staticmethod
     async def get_history_by_id(conn: AsyncSession, id: int):
-        stmt = select(ChatMessage).where(ChatMessage.chat_id == id)
+        stmt = (
+            select(ChatMessage)
+            .where(ChatMessage.chat_id == id)
+            .order_by(ChatMessage.created_at.asc())
+        )
         result = await conn.execute(stmt)
         messages = result.scalars().all()
 

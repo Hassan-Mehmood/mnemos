@@ -2,8 +2,10 @@ from fastapi import BackgroundTasks
 
 from src.chats.chat_repository import ChatRepository
 from src.chats.chat_schemas import ChatInvoke
-from src.chats.chat_utils import format_chat_history
+
+# from src.chats.chat_utils import format_chat_history
 from src.components.chatbot import chatbot
+from src.components.short_term_memory import ShortTermMemory
 from src.database.database import AsyncSession
 from src.database.db_enums import MessageSender
 
@@ -16,10 +18,11 @@ class ChatService:
         if payload.chat_id is None:
             raise ValueError("Chat ID must be provided for invoking chat.")
 
-        chat_history = await ChatRepository.get_history_by_id(conn, payload.chat_id)
+        short_term_memory = ShortTermMemory(max_length=10)
 
-        chat_history = format_chat_history(chat_history)
-        response = chatbot.invoke(payload.message, chat_history)
+        await short_term_memory.add(payload=payload, conn=conn)
+
+        response = chatbot.invoke(short_term_memory.get_memory())
 
         backgroundTasks.add_task(
             ChatRepository.save_message,
