@@ -52,7 +52,7 @@ class DatabaseSessionManager:
 
 
 settings = get_settings()
-sessionmanager = DatabaseSessionManager(settings.DATABASE_URL, {"echo": True})
+sessionmanager = DatabaseSessionManager(settings.DATABASE_URL)
 
 
 async def get_db():

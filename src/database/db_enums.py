@@ -1,6 +1,6 @@
 from enum import Enum
 
 
-class MessageSender(Enum):
-    USER = "USER"
-    BOT = "BOT"
+class MessageSender(str, Enum):
+    USER = "user"
+    BOT = "assistant"

@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
@@ -15,6 +15,13 @@ class User(Base):
 
     chats: Mapped[List["Chat"]] = relationship(
         "Chat", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), onupdate=func.now(), nullable=True
     )
 
     def __repr__(self) -> str:
@@ -32,8 +39,12 @@ class Chat(Base):
 
     user: Mapped["User"] = relationship(back_populates="chats")
 
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True))
-    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), onupdate=func.now(), nullable=True
+    )
 
     def __repr__(self):
         return f"Chat(id={self.id!r}, user_id={self.user_id!r}, created_at={self.created_at!r}, updated_at={self.updated_at!r}), messages={len(self.messages)}"
@@ -49,8 +60,12 @@ class ChatMessage(Base):
 
     chat: Mapped[Chat] = relationship(back_populates="messages")
 
-    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True))
-    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), onupdate=func.now(), nullable=True
+    )
 
     def __repr__(self):
         return f"ChatMessage(id={self.id!r}, chat_id={self.chat_id!r}, sender={self.sender!r}, created_at={self.created_at!r}, updated_at={self.updated_at!r}), content={self.content}"
