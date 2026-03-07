@@ -5,7 +5,7 @@ from src.chats.chat_schemas import ChatInvoke
 from src.chats.chat_service import ChatService
 from src.database.database import DBSession
 
-router = APIRouter(prefix="/chats", tags=["chats"])
+router = APIRouter(prefix="/chat", tags=["chats"])
 
 
 @router.post("/invoke")

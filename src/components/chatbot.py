@@ -10,7 +10,6 @@ class Chatbot:
         self.client = OpenAI(api_key=get_settings().OPENAI_API_KEY)
 
     def invoke(self, input: str, history: list[ChatMessageDict]) -> str:
-
         history.append({"role": MessageSender.USER, "content": input})
 
         response = self.client.responses.create(
