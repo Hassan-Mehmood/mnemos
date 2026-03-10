@@ -5,7 +5,7 @@ from src.chats.chat_schemas import ChatInvoke
 
 # from src.chats.chat_utils import format_chat_history
 from src.components.chatbot import chatbot
-from src.components.short_term_memory import ShortTermMemory
+from src.components.memory_retriever import MemoryRetriever
 from src.database.database import AsyncSession
 from src.database.db_enums import MessageSender
 
@@ -18,11 +18,13 @@ class ChatService:
         if payload.chat_id is None:
             raise ValueError("Chat ID must be provided for invoking chat.")
 
-        short_term_memory = ShortTermMemory(max_length=10)
+        memory_retriever = MemoryRetriever(conn=conn)
 
-        await short_term_memory.add(payload=payload, conn=conn)
+        memory = await memory_retriever.retrieve(
+            chat_id=payload.chat_id, query=payload.message
+        )
 
-        response = chatbot.invoke(short_term_memory.get_memory())
+        response = chatbot.invoke(memory)
 
         backgroundTasks.add_task(
             ChatRepository.save_message,
