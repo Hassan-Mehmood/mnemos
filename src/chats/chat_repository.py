@@ -1,6 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.database.database import sessionmanager
+from src.database.db_enums import MessageSender
 from src.database.models import Chat, ChatMessage
 
 
@@ -25,10 +27,21 @@ class ChatRepository:
         return messages
 
     @staticmethod
-    async def save_message(conn: AsyncSession, chat_id: int, content: str, sender: str):
-        new_message = ChatMessage(chat_id=chat_id, content=content, sender=sender)
-        conn.add(new_message)
-        await conn.commit()
+    async def save_user_bot_exchange(
+        chat_id: int, user_message: str, bot_response: str
+    ):
+        async with sessionmanager.session() as conn:
+            conn.add(
+                ChatMessage(
+                    chat_id=chat_id, content=user_message, sender=MessageSender.USER
+                )
+            )
+            conn.add(
+                ChatMessage(
+                    chat_id=chat_id, content=bot_response, sender=MessageSender.BOT
+                )
+            )
+            await conn.commit()
 
     @staticmethod
     async def get_chat_by_id(conn: AsyncSession, id: int):

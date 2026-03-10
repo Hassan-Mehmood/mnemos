@@ -43,6 +43,8 @@ class MemoryExtractor:
 
     async def persist_memory(self, memories: List[ExtractorOutput], user_id: int):
         async with sessionmanager.session() as session:
+            # TODO: BUG HERE!!
+            # TODO: Solve in next session
             for memory in memories:
                 record = MemoryStructured(
                     user_id=user_id,

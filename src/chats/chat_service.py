@@ -2,13 +2,10 @@ from fastapi import BackgroundTasks
 
 from src.chats.chat_repository import ChatRepository
 from src.chats.chat_schemas import ChatInvoke
-
-# from src.chats.chat_utils import format_chat_history
 from src.components.chatbot import chatbot
 from src.components.memory_extractor import memory_extractor
 from src.components.memory_retriever import MemoryRetriever
 from src.database.database import AsyncSession
-from src.database.db_enums import MessageSender
 
 
 class ChatService:
@@ -29,20 +26,11 @@ class ChatService:
         response = chatbot.invoke(memory)
 
         backgroundTasks.add_task(memory_extractor.run, payload.message, payload.user_id)
-
         backgroundTasks.add_task(
-            ChatRepository.save_message,
-            conn,
+            ChatRepository.save_user_bot_exchange,
             payload.chat_id,
             payload.message,
-            MessageSender.USER,
-        )
-        backgroundTasks.add_task(
-            ChatRepository.save_message,
-            conn,
-            payload.chat_id,
             response,
-            MessageSender.BOT,
         )
 
         return response
