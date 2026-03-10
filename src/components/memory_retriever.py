@@ -1,5 +1,6 @@
 from src.components.short_term_memory import ShortTermMemory
 from src.database.database import AsyncSession
+from src.logger import logger
 
 
 class MemoryRetriever:
@@ -11,12 +12,13 @@ class MemoryRetriever:
     async def retrieve(self, chat_id: int, query: str):
 
         short_term_memory = await self.short_term_memory.prepare(
+            conn=self.conn,
             chat_id=chat_id,
             query=query,
-            conn=self.conn,
         )
 
-        print(
+        logger.info(
             f"Retrieved memory for chat_id {chat_id}: {len(short_term_memory)} messages"
         )
+
         return short_term_memory

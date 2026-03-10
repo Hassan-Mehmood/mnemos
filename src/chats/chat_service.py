@@ -5,6 +5,7 @@ from src.chats.chat_schemas import ChatInvoke
 
 # from src.chats.chat_utils import format_chat_history
 from src.components.chatbot import chatbot
+from src.components.memory_extractor import memory_extractor
 from src.components.memory_retriever import MemoryRetriever
 from src.database.database import AsyncSession
 from src.database.db_enums import MessageSender
@@ -21,10 +22,13 @@ class ChatService:
         memory_retriever = MemoryRetriever(conn=conn)
 
         memory = await memory_retriever.retrieve(
-            chat_id=payload.chat_id, query=payload.message
+            chat_id=payload.chat_id,
+            query=payload.message,
         )
 
         response = chatbot.invoke(memory)
+
+        backgroundTasks.add_task(memory_extractor.run, payload.message, payload.user_id)
 
         backgroundTasks.add_task(
             ChatRepository.save_message,

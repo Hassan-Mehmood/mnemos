@@ -2,6 +2,7 @@ from src.chats.chat_enums import ChatMessageDict
 from src.chats.chat_repository import ChatRepository
 from src.database.database import AsyncSession
 from src.database.db_enums import MessageSender
+from src.logger import logger
 
 
 class ShortTermMemory:
@@ -12,7 +13,7 @@ class ShortTermMemory:
     async def prepare(self, chat_id: int, query: str, conn: AsyncSession):
         chat_history = await ChatRepository.get_history_by_id(conn, chat_id)
 
-        print(f"Total messages in chat history: {len(chat_history)}")
+        logger.info(f"Total messages in chat history: {len(chat_history)}")
 
         for entry in chat_history:
             self.memory.append({"role": entry.sender, "content": entry.content})

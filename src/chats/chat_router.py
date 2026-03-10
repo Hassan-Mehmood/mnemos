@@ -4,6 +4,7 @@ from src.chats.chat_repository import ChatRepository
 from src.chats.chat_schemas import ChatInvoke
 from src.chats.chat_service import ChatService
 from src.database.database import DBSession
+from src.logger import logger
 
 router = APIRouter(prefix="/chat", tags=["chats"])
 
@@ -17,7 +18,7 @@ async def invoke_chat(
             try:
                 chat_id = await ChatRepository.create_chat(conn, chat_request.user_id)
             except Exception as e:
-                print(f"Error creating chat: {str(e)}")
+                logger.error(f"Error creating chat: {str(e)} | {chat_request}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to create chat",
@@ -28,7 +29,9 @@ async def invoke_chat(
         else:
             chat_id = await ChatRepository.get_chat_by_id(conn, chat_request.chat_id)
             if not chat_id:
-                print(f"Chat with ID {chat_request.chat_id} not found.")
+                logger.error(
+                    f"Chat with ID {chat_request.chat_id} not found. | {chat_request}"
+                )
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
                 )
@@ -41,7 +44,8 @@ async def invoke_chat(
         raise http_exc
 
     except Exception as e:
+        logger.error(f"An error occurred while processing the chat: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred while processing the chat: {str(e)}",
+            detail="An error occurred while processing the chat",
         )

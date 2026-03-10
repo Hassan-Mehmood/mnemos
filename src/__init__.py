@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.chats.router import router as chat_router
+from src.chats.chat_router import router as chat_router
 from src.database.database import sessionmanager
 
 
