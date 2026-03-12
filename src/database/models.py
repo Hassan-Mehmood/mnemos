@@ -34,12 +34,16 @@ class Chat(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
 
+    name: Mapped[str] = mapped_column(String(), nullable=False)
     messages: Mapped[List["ChatMessage"]] = relationship(
         "ChatMessage", back_populates="chat", cascade="all, delete-orphan"
     )
 
     user: Mapped["User"] = relationship(back_populates="chats")
 
+    last_message_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
