@@ -9,39 +9,38 @@ from src.database.models import Chat, ChatMessage
 
 
 class ChatRepository:
-    @staticmethod
-    async def create_chat(conn: AsyncSession, user_id: int, name: str):
+    def __init__(self, conn: AsyncSession):
+        self.conn = conn
+
+    async def create_chat(self, user_id: int, name: str):
         new_chat = Chat(user_id=user_id, name=name)
-        conn.add(new_chat)
-        await conn.commit()
-        await conn.refresh(new_chat)
+        self.conn.add(new_chat)
+        await self.conn.commit()
+        await self.conn.refresh(new_chat)
         return new_chat.id
 
-    @staticmethod
-    async def get_all(conn: AsyncSession):
+    async def get_all(self):
         stmt = select(Chat).order_by(Chat.created_at.asc())
 
-        result = await conn.execute(stmt)
+        result = await self.conn.execute(stmt)
 
         chats = result.scalars().all()
 
         return chats
 
-    @staticmethod
-    async def get_history_by_id(conn: AsyncSession, id: int):
+    async def get_history_by_id(self, id: int):
         stmt = (
             select(ChatMessage)
             .where(ChatMessage.chat_id == id)
             .order_by(ChatMessage.created_at.asc())
         )
-        result = await conn.execute(stmt)
+        result = await self.conn.execute(stmt)
         messages = result.scalars().all()
 
         return messages
 
-    @staticmethod
     async def save_user_bot_exchange(
-        chat_id: int, user_message: str, bot_response: str
+        self, chat_id: int, user_message: str, bot_response: str
     ):
         async with sessionmanager.session() as conn:
             conn.add(
@@ -56,9 +55,8 @@ class ChatRepository:
             )
             await conn.commit()
 
-    @staticmethod
     async def get_by_id(
-        conn: AsyncSession,
+        self,
         id: int,
         columns: Optional[List] = None,
         load: Optional[List] = None,
@@ -71,13 +69,10 @@ class ChatRepository:
         if load:
             stmt.options(*load)
 
-        result = await conn.execute(stmt)
+        result = await self.conn.execute(stmt)
         return result.scalars().first()
 
-    @staticmethod
-    async def get_chat_messages(
-        conn: AsyncSession, id: int, columns: Optional[List] = None
-    ):
+    async def get_chat_messages(self, id: int, columns: Optional[List] = None):
         if not columns:
             stmt = select(ChatMessage).where(ChatMessage.chat_id == id)
         else:
@@ -85,6 +80,6 @@ class ChatRepository:
 
         stmt = stmt.order_by(ChatMessage.created_at.asc())
 
-        result = await conn.execute(stmt)
+        result = await self.conn.execute(stmt)
 
         return result.scalars().all()

@@ -1,17 +1,17 @@
 from src.chats.chat_enums import ChatMessageDict
 from src.chats.chat_repository import ChatRepository
-from src.database.database import AsyncSession
 from src.database.db_enums import MessageSender
 from src.logger import logger
 
 
 class ShortTermMemory:
-    def __init__(self, max_length=10):
+    def __init__(self, chat_repository: ChatRepository, max_length=10):
         self.max_length = max_length
+        self.chat_repository = chat_repository
         self.memory: list[ChatMessageDict] = []
 
-    async def prepare(self, chat_id: int, query: str, conn: AsyncSession):
-        chat_history = await ChatRepository.get_history_by_id(conn, chat_id)
+    async def prepare(self, chat_id: int, query: str):
+        chat_history = await self.chat_repository.get_history_by_id(chat_id)
 
         logger.info(f"Total messages in chat history: {len(chat_history)}")
 
