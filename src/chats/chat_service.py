@@ -7,16 +7,13 @@ from src.chats.chat_schemas import ChatInvoke
 from src.components.chatbot import chatbot
 from src.components.memory_extractor import memory_extractor
 from src.components.memory_retriever import MemoryRetriever
-from src.database.database import AsyncSession
 
 
 class ChatService:
     def __init__(self, chat_repository: ChatRepository):
         self.chat_repository = chat_repository
 
-    async def invoke(
-        self, payload: ChatInvoke, backgroundTasks: BackgroundTasks
-    ) -> str:
+    async def invoke(self, payload: ChatInvoke, backgroundTasks: BackgroundTasks):
         if payload.chat_id is None:
             raise ValueError("Chat ID must be provided for invoking chat.")
 
@@ -27,17 +24,23 @@ class ChatService:
             query=payload.message,
         )
 
-        response = chatbot.invoke(memory)
+        async def generator():
+            full_response = ""
+            async for chunk in chatbot.stream(history=memory):
+                full_response += chunk
+                yield chunk.encode("utf-8")
 
-        backgroundTasks.add_task(memory_extractor.run, payload.message, payload.user_id)
-        backgroundTasks.add_task(
-            self.chat_repository.save_user_bot_exchange,
-            payload.chat_id,
-            payload.message,
-            response,
-        )
+            backgroundTasks.add_task(
+                memory_extractor.run, payload.message, payload.user_id
+            )
+            backgroundTasks.add_task(
+                self.chat_repository.save_user_bot_exchange,
+                payload.chat_id,  # type: ignore
+                payload.message,
+                full_response,
+            )
 
-        return response
+        return generator()
 
     async def create(self, user_id: int, name: str) -> int:
         return await self.chat_repository.create_chat(user_id, name)
@@ -55,3 +58,6 @@ class ChatService:
 
     async def get_chat_messages(self, id: int):
         return await self.chat_repository.get_chat_messages(id)
+
+    async def delete_chat(self, chat_id: int):
+        await self.chat_repository.delete_chat(chat_id)

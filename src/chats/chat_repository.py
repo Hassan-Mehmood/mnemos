@@ -83,3 +83,12 @@ class ChatRepository:
         result = await self.conn.execute(stmt)
 
         return result.scalars().all()
+
+    async def delete_chat(self, chat_id: int):
+        stmt = select(Chat).where(Chat.id == chat_id)
+        result = await self.conn.execute(stmt)
+        chat = result.scalars().first()
+
+        if chat:
+            await self.conn.delete(chat)
+            await self.conn.commit()

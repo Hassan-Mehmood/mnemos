@@ -1,6 +1,7 @@
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 
 from src.chats.chat_schemas import AllChatsResponse, ChatInvoke, ChatMessagesResponse
 from src.chats.chat_service import ChatService
@@ -12,7 +13,7 @@ from src.schemas.base_schema import SuccessResponse
 router = APIRouter(prefix="/chats", tags=["chats"])
 
 
-@router.post("/invoke")
+@router.post("/invoke", response_class=StreamingResponse)
 async def invoke_chat(
     chat_request: ChatInvoke,
     backgroundTasks: BackgroundTasks,
@@ -45,10 +46,16 @@ async def invoke_chat(
                     status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
                 )
 
-        response = await chat_service.invoke(chat_request, backgroundTasks)
+        stream = await chat_service.invoke(chat_request, backgroundTasks)
 
-        return {"response": response}
-
+        return StreamingResponse(
+            stream,
+            media_type="text/plain; charset=utf-8",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
     except HTTPException as http_exc:
         raise http_exc
 
@@ -103,4 +110,28 @@ async def get_chat(chat_id: int, chat_service: ChatService = Depends(get_chat_se
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while processing the chat",
+        )
+
+
+@router.delete("/{chat_id}", response_model=SuccessResponse[None])
+async def delete_chat(
+    chat_id: int, chat_service: ChatService = Depends(get_chat_service)
+):
+    try:
+        await chat_service.delete_chat(chat_id)
+
+        return SuccessResponse[None](
+            success=True,
+            message="Chat deleted successfully",
+            data=None,
+        )
+
+    except HTTPException as http_exc:
+        raise http_exc
+
+    except Exception as e:
+        logger.error(f"An error occurred while deleting the chat: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while deleting the chat",
         )

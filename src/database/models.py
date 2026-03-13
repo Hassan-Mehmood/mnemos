@@ -58,7 +58,9 @@ class Chat(Base):
 class ChatMessage(Base):
     __tablename__ = "chat_message"
     id: Mapped[int] = mapped_column(primary_key=True)
-    chat_id: Mapped[int] = mapped_column(ForeignKey("chat.id"))
+    chat_id: Mapped[int] = mapped_column(
+        ForeignKey("chat.id"),
+    )
 
     content: Mapped[str] = mapped_column(String())
     sender: Mapped[MessageSender] = mapped_column(String(20))

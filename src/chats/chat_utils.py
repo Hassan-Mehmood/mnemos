@@ -20,6 +20,6 @@ def format_chat_history(
     # return formatted_history
 
 
-def get_chat_service(conn: DBSession, repo):
+def get_chat_service(conn: DBSession):
     repo = ChatRepository(conn)
     return ChatService(repo)
