@@ -26,6 +26,10 @@ async def invoke_chat(
                 chat_id = await chat_service.create(
                     chat_request.user_id, chat_request.message
                 )
+
+                backgroundTasks.add_task(
+                    chat_service.name_chat, chat_id, chat_request.message
+                )
             except Exception as e:
                 logger.error(f"Error creating chat: {str(e)} | {chat_request}")
                 raise HTTPException(
