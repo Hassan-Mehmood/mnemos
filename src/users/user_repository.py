@@ -5,8 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models import MemoryStructured
-from src.logger import logger
 from src.schemas.memory_extractor_schema import ExtractorOutput
+from src.users.user_schemas import UserMemories
 
 
 class UserRepository:
@@ -48,3 +48,22 @@ class UserRepository:
             await self.conn.flush()
 
         await self.conn.commit()
+
+    async def get_user_memories(self, user_id: uuid.UUID) -> List[UserMemories]:
+        result = await self.conn.execute(
+            select(MemoryStructured)
+            .where(MemoryStructured.user_id == user_id)
+            .order_by(MemoryStructured.created_at.desc())
+        )
+
+        memories = result.scalars().all()
+
+        return [
+            UserMemories(
+                key=mem.key,
+                value=mem.value,
+                confidence=mem.confidence,
+                superseded_by=mem.superseded_by,
+            )
+            for mem in memories
+        ]

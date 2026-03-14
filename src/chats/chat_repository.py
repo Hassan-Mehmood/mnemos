@@ -93,3 +93,13 @@ class ChatRepository:
         if chat:
             await self.conn.delete(chat)
             await self.conn.commit()
+
+    async def update_chat_name(self, chat_id: uuid.UUID, new_name: str):
+        stmt = select(Chat).where(Chat.id == chat_id)
+        result = await self.conn.execute(stmt)
+        chat = result.scalars().first()
+
+        if chat:
+            chat.name = new_name
+            self.conn.add(chat)
+            await self.conn.commit()
