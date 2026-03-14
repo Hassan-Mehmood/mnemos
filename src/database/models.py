@@ -1,6 +1,17 @@
+import uuid
 from typing import List, Optional
 
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import (
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    Uuid,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -10,7 +21,7 @@ from src.database.db_enums import MessageSender
 
 class User(Base):
     __tablename__ = "user"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(30))
     fullname: Mapped[Optional[str]]
 
@@ -31,8 +42,8 @@ class User(Base):
 
 class Chat(Base):
     __tablename__ = "chat"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"))
 
     name: Mapped[str] = mapped_column(String(), nullable=False)
     messages: Mapped[List["ChatMessage"]] = relationship(
@@ -57,8 +68,8 @@ class Chat(Base):
 
 class ChatMessage(Base):
     __tablename__ = "chat_message"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    chat_id: Mapped[int] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    chat_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("chat.id"),
     )
 
@@ -81,18 +92,15 @@ class ChatMessage(Base):
 class MemoryStructured(Base):
     __tablename__ = "memory_structured"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"))
     key: Mapped[str] = mapped_column(String(100))
     value: Mapped[str] = mapped_column(Text)
     confidence: Mapped[float] = mapped_column(Float, default=1.0)
 
-    # Self-referential — points to the newer memory that replaced this one
-    superseded_by: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("memory_structured.id"), nullable=True
-    )
-    superseded_by_memory: Mapped[Optional["MemoryStructured"]] = relationship(
-        "MemoryStructured", remote_side="MemoryStructured.id"
+    superseded_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid,
+        nullable=True,
     )
 
     user: Mapped["User"] = relationship("User")
@@ -121,9 +129,9 @@ class MemoryStructured(Base):
 class MemoryLog(Base):
     __tablename__ = "memory_log"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
-    message_id: Mapped[int] = mapped_column(ForeignKey("chat_message.id"))
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"))
+    message_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chat_message.id"))
 
     # Gate decision: "SKIP" | "RETRIEVE" | "RETRIEVE_AND_STORE"
     gate_decision: Mapped[str] = mapped_column(String(30))

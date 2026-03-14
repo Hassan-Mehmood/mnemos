@@ -1,3 +1,4 @@
+import uuid
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
@@ -67,7 +68,7 @@ async def invoke_chat(
         )
 
 
-@router.get("/", response_model=SuccessResponse[List[AllChatsResponse]])
+@router.get("", response_model=SuccessResponse[List[AllChatsResponse]])
 async def get_all_chats_for_user(chat_service: ChatService = Depends(get_chat_service)):
     try:
         chats = await chat_service.get_all()
@@ -90,7 +91,9 @@ async def get_all_chats_for_user(chat_service: ChatService = Depends(get_chat_se
 
 
 @router.get("/{chat_id}", response_model=SuccessResponse[List[ChatMessagesResponse]])
-async def get_chat(chat_id: int, chat_service: ChatService = Depends(get_chat_service)):
+async def get_chat(
+    chat_id: uuid.UUID, chat_service: ChatService = Depends(get_chat_service)
+):
     try:
         messages = await chat_service.get_chat_messages(id=chat_id)
 
@@ -115,7 +118,7 @@ async def get_chat(chat_id: int, chat_service: ChatService = Depends(get_chat_se
 
 @router.delete("/{chat_id}", response_model=SuccessResponse[None])
 async def delete_chat(
-    chat_id: int, chat_service: ChatService = Depends(get_chat_service)
+    chat_id: uuid.UUID, chat_service: ChatService = Depends(get_chat_service)
 ):
     try:
         await chat_service.delete_chat(chat_id)

@@ -1,3 +1,5 @@
+import uuid
+
 from src.chats.chat_enums import ChatMessageDict
 from src.chats.chat_repository import ChatRepository
 from src.database.db_enums import MessageSender
@@ -10,7 +12,7 @@ class ShortTermMemory:
         self.chat_repository = chat_repository
         self.memory: list[ChatMessageDict] = []
 
-    async def prepare(self, chat_id: int, query: str):
+    async def prepare(self, chat_id: uuid.UUID, query: str):
         chat_history = await self.chat_repository.get_history_by_id(chat_id)
 
         logger.info(f"Total messages in chat history: {len(chat_history)}")

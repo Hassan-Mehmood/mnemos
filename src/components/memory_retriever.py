@@ -1,3 +1,5 @@
+import uuid
+
 from src.chats.chat_repository import ChatRepository
 from src.components.short_term_memory import ShortTermMemory
 from src.logger import logger
@@ -12,7 +14,7 @@ class MemoryRetriever:
         )
         # self.memory_store = memory_store
 
-    async def retrieve(self, chat_id: int, query: str):
+    async def retrieve(self, chat_id: uuid.UUID, query: str):
 
         short_term_memory = await self.short_term_memory.prepare(
             chat_id=chat_id, query=query

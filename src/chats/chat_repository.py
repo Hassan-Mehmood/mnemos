@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Optional
 
 from sqlalchemy import select
@@ -12,7 +13,7 @@ class ChatRepository:
     def __init__(self, conn: AsyncSession):
         self.conn = conn
 
-    async def create_chat(self, user_id: int, name: str):
+    async def create_chat(self, user_id: uuid.UUID, name: str) -> uuid.UUID:
         new_chat = Chat(user_id=user_id, name=name)
         self.conn.add(new_chat)
         await self.conn.commit()
@@ -28,7 +29,7 @@ class ChatRepository:
 
         return chats
 
-    async def get_history_by_id(self, id: int):
+    async def get_history_by_id(self, id: uuid.UUID):
         stmt = (
             select(ChatMessage)
             .where(ChatMessage.chat_id == id)
@@ -40,7 +41,7 @@ class ChatRepository:
         return messages
 
     async def save_user_bot_exchange(
-        self, chat_id: int, user_message: str, bot_response: str
+        self, chat_id: uuid.UUID, user_message: str, bot_response: str
     ):
         async with sessionmanager.session() as conn:
             conn.add(
@@ -57,7 +58,7 @@ class ChatRepository:
 
     async def get_by_id(
         self,
-        id: int,
+        id: uuid.UUID,
         columns: Optional[List] = None,
         load: Optional[List] = None,
     ):
@@ -72,7 +73,7 @@ class ChatRepository:
         result = await self.conn.execute(stmt)
         return result.scalars().first()
 
-    async def get_chat_messages(self, id: int, columns: Optional[List] = None):
+    async def get_chat_messages(self, id: uuid.UUID, columns: Optional[List] = None):
         if not columns:
             stmt = select(ChatMessage).where(ChatMessage.chat_id == id)
         else:
@@ -84,7 +85,7 @@ class ChatRepository:
 
         return result.scalars().all()
 
-    async def delete_chat(self, chat_id: int):
+    async def delete_chat(self, chat_id: uuid.UUID):
         stmt = select(Chat).where(Chat.id == chat_id)
         result = await self.conn.execute(stmt)
         chat = result.scalars().first()

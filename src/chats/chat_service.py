@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Optional
 
 from fastapi import BackgroundTasks
@@ -42,7 +43,7 @@ class ChatService:
 
         return generator()
 
-    async def create(self, user_id: int, name: str) -> int:
+    async def create(self, user_id: uuid.UUID, name: str) -> uuid.UUID:
         return await self.chat_repository.create_chat(user_id, name)
 
     async def get_all(self):
@@ -50,14 +51,14 @@ class ChatService:
 
     async def get_by_id(
         self,
-        chat_id: int,
+        chat_id: uuid.UUID,
         columns: Optional[List] = None,
         load: Optional[List] = None,
     ):
         return await self.chat_repository.get_by_id(chat_id, columns=columns, load=load)
 
-    async def get_chat_messages(self, id: int):
+    async def get_chat_messages(self, id: uuid.UUID):
         return await self.chat_repository.get_chat_messages(id)
 
-    async def delete_chat(self, chat_id: int):
+    async def delete_chat(self, chat_id: uuid.UUID):
         await self.chat_repository.delete_chat(chat_id)

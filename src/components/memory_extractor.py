@@ -1,30 +1,23 @@
+import uuid
 from typing import List
 
-from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 from pydantic_ai.models.groq import GroqModel
 from pydantic_ai.providers.groq import GroqProvider
 
 from src.config import get_settings
 from src.database.database import sessionmanager
-from src.database.models import MemoryStructured
 from src.logger import logger
+from src.schemas.memory_extractor_schema import ExtractorOutput
+from src.users.user_repository import UserRepository
 from src.utils.system_prompts import EXTRACTION_PROMPT
 
 settings = get_settings()
 
 
-class ExtractorOutput(BaseModel):
-    key: str = Field(..., description="The key of the memory")
-    value: str = Field(..., description="The value of the memory")
-    confidence: float = Field(
-        le=10, ge=0, description="The confidence score of the key and value"
-    )
-
-
 class MemoryExtractor:
     def __init__(self) -> None:
-        self.memory_extractor = Agent(
+        self.memory_extractor_agent = Agent(
             model=GroqModel(
                 "openai/gpt-oss-20b",
                 provider=GroqProvider(api_key=settings.GROQ_API_KEY),
@@ -33,29 +26,18 @@ class MemoryExtractor:
             output_type=List[ExtractorOutput],
         )
 
-    async def run(self, message: str, user_id: int) -> List[ExtractorOutput]:
-        response = await self.memory_extractor.run(message)
+    async def run(self, message: str, user_id: uuid.UUID) -> List[ExtractorOutput]:
+        response = await self.memory_extractor_agent.run(message)
         logger.info(f"{response.output}")
 
         await self.persist_memory(response.output, user_id)
 
         return response.output
 
-    async def persist_memory(self, memories: List[ExtractorOutput], user_id: int):
+    async def persist_memory(self, memories: List[ExtractorOutput], user_id: uuid.UUID):
         async with sessionmanager.session() as session:
-            # TODO: BUG HERE!!
-            # TODO: Solve in next session
-            for memory in memories:
-                record = MemoryStructured(
-                    user_id=user_id,
-                    key=memory.key,
-                    value=memory.value,
-                    confidence=memory.confidence,
-                )
-
-                session.add(record)
-
-            await session.commit()
+            repo = UserRepository(conn=session)
+            await repo.save_memories(memories, user_id)
 
 
 memory_extractor = MemoryExtractor()
