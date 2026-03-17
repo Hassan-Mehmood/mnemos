@@ -40,6 +40,18 @@ class ChatRepository:
 
         return messages
 
+    async def save_user_message(self, chat_id: uuid.UUID, content: str) -> uuid.UUID:
+        message = ChatMessage(chat_id=chat_id, content=content, sender=MessageSender.USER)
+        self.conn.add(message)
+        await self.conn.commit()
+        await self.conn.refresh(message)
+        return message.id
+
+    async def save_bot_message(self, chat_id: uuid.UUID, content: str) -> None:
+        async with sessionmanager.session() as conn:
+            conn.add(ChatMessage(chat_id=chat_id, content=content, sender=MessageSender.BOT))
+            await conn.commit()
+
     async def save_user_bot_exchange(
         self, chat_id: uuid.UUID, user_message: str, bot_response: str
     ):

@@ -5,6 +5,7 @@ from src.chats.chat_repository import ChatRepository
 from src.chats.chat_service import ChatService
 from src.database.database import DBSession
 from src.database.models import ChatMessage
+from src.memory.memory_log_repository import MemoryLogRepository
 from src.users.user_repository import UserRepository
 
 
@@ -24,4 +25,5 @@ def format_chat_history(
 def get_chat_service(conn: DBSession):
     repo = ChatRepository(conn)
     user_repo = UserRepository(conn)
-    return ChatService(repo, user_repo)
+    memory_log_repo = MemoryLogRepository(conn)
+    return ChatService(repo, user_repo, memory_log_repo)

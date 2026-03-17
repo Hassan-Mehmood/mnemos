@@ -133,13 +133,10 @@ class MemoryLog(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"))
     message_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chat_message.id"))
 
-    # Gate decision: "SKIP" | "RETRIEVE" | "RETRIEVE_AND_STORE"
     gate_decision: Mapped[str] = mapped_column(String(30))
 
-    # Which rule/signal triggered — e.g. "personal_signal: my"
     gate_reason: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
-    # Memory IDs fetched vs actually used by LLM — gap between these is your training signal
     retrieved_ids: Mapped[Optional[list]] = mapped_column(JSONB, default=list)
     used_memory_ids: Mapped[Optional[list]] = mapped_column(JSONB, default=list)
 
