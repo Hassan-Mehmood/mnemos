@@ -18,11 +18,11 @@ class ChatService:
         self.chat_repository = chat_repository
         self.user_repository = user_repository
 
+        self.memory_extractor = MemoryExtractor(user_repository=self.user_repository)
         self.memory_retriever = MemoryRetriever(
             chat_repository=self.chat_repository,
             user_repository=self.user_repository,
         )
-        self.memory_extractor = MemoryExtractor(user_repository=self.user_repository)
 
     async def invoke(self, payload: ChatInvoke, backgroundTasks: BackgroundTasks):
         if payload.chat_id is None:

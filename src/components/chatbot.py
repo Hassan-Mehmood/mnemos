@@ -4,7 +4,7 @@ from openai import OpenAI
 
 from src.chats.chat_enums import ChatMessageDict
 from src.config import get_settings
-from src.users.user_schemas import UserMemories
+from src.schemas.memory_extractor_schema import ExtractorOutput
 from src.utils.system_prompts import CHAT_PROMPT
 
 
@@ -22,16 +22,18 @@ class Chatbot:
         return response.output_text
 
     async def stream(
-        self, history: list[ChatMessageDict], factual_memory: List[UserMemories]
+        self, history: list[ChatMessageDict], factual_memory: List[ExtractorOutput]
     ) -> AsyncGenerator[str, None]:
         intructions = CHAT_PROMPT.format(
             factual_memory="\n".join(
                 [
-                    f'Key: {mem.key} | Value: "{mem.value}" (confidence: {mem.confidence}, superseded_by: {mem.superseded_by})'
+                    f'Key: {mem.key} | Value: "{mem.value}" (confidence: {mem.confidence})'
                     for mem in factual_memory
                 ]
             ),
         )
+
+        print(f"Instructions: {intructions}")
 
         stream = self.client.responses.create(
             model="gpt-4o-mini-2024-07-18",

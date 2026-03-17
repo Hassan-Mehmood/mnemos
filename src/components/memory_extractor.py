@@ -33,7 +33,7 @@ class MemoryExtractor:
 
         user_memories_str = "\n".join(
             [
-                f'Key: {mem.key} | Value: "{mem.value}" (confidence: {mem.confidence}, superseded_by: {mem.superseded_by})'
+                f'Key: {mem.key} | Value: "{mem.value}" (confidence: {mem.confidence}'
                 for mem in user_memories
             ]
         )

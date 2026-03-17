@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models import MemoryStructured
 from src.schemas.memory_extractor_schema import ExtractorOutput
-from src.users.user_schemas import UserMemories
 
 
 class UserRepository:
@@ -18,7 +17,7 @@ class UserRepository:
             select(MemoryStructured).where(
                 MemoryStructured.user_id == user_id,
                 MemoryStructured.key == key,
-                MemoryStructured.superseded_by == None,
+                MemoryStructured.superseded_by.is_(None),
             )
         )
 
@@ -49,21 +48,23 @@ class UserRepository:
 
         await self.conn.commit()
 
-    async def get_user_memories(self, user_id: uuid.UUID) -> List[UserMemories]:
+    async def get_user_memories(self, user_id: uuid.UUID) -> List[ExtractorOutput]:
         result = await self.conn.execute(
             select(MemoryStructured)
-            .where(MemoryStructured.user_id == user_id)
+            .where(
+                MemoryStructured.user_id == user_id,
+                MemoryStructured.superseded_by.is_(None),
+            )
             .order_by(MemoryStructured.created_at.desc())
         )
 
         memories = result.scalars().all()
 
         return [
-            UserMemories(
+            ExtractorOutput(
                 key=mem.key,
                 value=mem.value,
                 confidence=mem.confidence,
-                superseded_by=mem.superseded_by,
             )
             for mem in memories
         ]
