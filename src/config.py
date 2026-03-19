@@ -9,10 +9,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str = Field(...)
     GROQ_API_KEY: str = Field(...)
 
+    EMBEDDING_DIMENSIONS: int = Field(1024, description="Qwen3-Embedding-0.6B")
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
 @lru_cache()
 def get_settings() -> Settings:
-    settings = Settings()
+    settings = Settings()  # type: ignore
     return settings

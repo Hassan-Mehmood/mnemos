@@ -1,5 +1,5 @@
-import uuid
 from typing import List, Optional
+from uuid import UUID
 
 from fastapi import BackgroundTasks
 
@@ -49,13 +49,16 @@ class ChatService:
         async def generator():
             full_response = ""
             async for chunk in chatbot.stream(
-                history=memory.short_term, factual_memory=memory.factual
+                history=memory.short_term,
+                factual_memory=memory.factual,
             ):
                 full_response += chunk
                 yield chunk.encode("utf-8")
 
             backgroundTasks.add_task(
-                self.memory_extractor.run, payload.message, payload.user_id
+                self.memory_extractor.extract,
+                payload.message,
+                payload.user_id,
             )
             backgroundTasks.add_task(
                 self.chat_repository.save_bot_message,
@@ -65,7 +68,7 @@ class ChatService:
 
         return generator()
 
-    async def create(self, user_id: uuid.UUID, name: str) -> uuid.UUID:
+    async def create(self, user_id: UUID, name: str) -> UUID:
         return await self.chat_repository.create_chat(user_id, name)
 
     async def get_all(self):
@@ -73,19 +76,19 @@ class ChatService:
 
     async def get_by_id(
         self,
-        chat_id: uuid.UUID,
+        chat_id: UUID,
         columns: Optional[List] = None,
         load: Optional[List] = None,
     ):
         return await self.chat_repository.get_by_id(chat_id, columns=columns, load=load)
 
-    async def get_chat_messages(self, id: uuid.UUID):
+    async def get_chat_messages(self, id: UUID):
         return await self.chat_repository.get_chat_messages(id)
 
-    async def delete_chat(self, chat_id: uuid.UUID):
+    async def delete_chat(self, chat_id: UUID):
         await self.chat_repository.delete_chat(chat_id)
 
-    async def name_chat(self, chat_id: uuid.UUID, message: str):
+    async def name_chat(self, chat_id: UUID, message: str):
         """Generate a name for the chat based on its first message."""
         # TODO: Consider a new approach for this.
         prompt = f'Generate a concise and descriptive name for a chat based on the following message: "{message}"'

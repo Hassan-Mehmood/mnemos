@@ -1,5 +1,5 @@
-import uuid
 from typing import List
+from uuid import UUID
 
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -28,33 +28,33 @@ class MemoryExtractor:
             output_type=List[ExtractorOutput],
         )
 
-    async def run(self, message: str, user_id: uuid.UUID) -> List[ExtractorOutput]:
+    async def extract(self, message: str, user_id: UUID) -> None:
         user_memories = await self.user_repository.get_user_memories(user_id)
 
+        kv_pairs = await self.extract_kv_pairs(message, user_memories)
+
+        await self.persist_memory(kv_pairs, user_id)
+
+    async def extract_kv_pairs(
+        self, message: str, user_memories: List[ExtractorOutput]
+    ) -> List[ExtractorOutput]:
         user_memories_str = "\n".join(
-            [
-                f'Key: {mem.key} | Value: "{mem.value}" (confidence: {mem.confidence}'
-                for mem in user_memories
-            ]
+            f'Key: {mem.key} | Value: "{mem.value}" (confidence: {mem.confidence})'
+            for mem in user_memories
         )
 
-        new_prompt = f"""
-USER MEMORIES:
-{user_memories_str}
+        prompt = f"USER MEMORIES:\n{user_memories_str}\n\nCURRENT MESSAGE:\n{message}"
 
-CURRENT MESSAGE:
-{message}
-"""
-
-        logger.info(f"Running memory extractor with prompt: {new_prompt}")
-        response = await self.memory_extractor_agent.run(new_prompt)
-        logger.info(f"{response.output}")
-
-        await self.persist_memory(response.output, user_id)
+        response = await self.memory_extractor_agent.run(prompt)
+        logger.info(f"Extracted KV pairs: {response.output}")
 
         return response.output
 
-    async def persist_memory(self, memories: List[ExtractorOutput], user_id: uuid.UUID):
+    async def create_memory_embeddings(self, kv_pairs: List[ExtractorOutput]):
+        pass
+
+    async def persist_memory(self, memories: List[ExtractorOutput], user_id: UUID):
+        # TODO: Comeback to this - we should ideally have a more robust way to handle DB sessions in background tasks
         async with sessionmanager.session() as session:
             repo = UserRepository(conn=session)
             await repo.save_memories(memories, user_id)

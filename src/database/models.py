@@ -1,6 +1,7 @@
-import uuid
 from typing import List, Optional
+from uuid import UUID, uuid4
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     DateTime,
     Float,
@@ -15,13 +16,16 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.config import get_settings
 from src.database import Base
 from src.database.db_enums import MessageSender
+
+settings = get_settings()
 
 
 class User(Base):
     __tablename__ = "user"
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(30))
     fullname: Mapped[Optional[str]]
 
@@ -42,8 +46,8 @@ class User(Base):
 
 class Chat(Base):
     __tablename__ = "chat"
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"))
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
 
     name: Mapped[str] = mapped_column(String(), nullable=False)
     messages: Mapped[List["ChatMessage"]] = relationship(
@@ -68,8 +72,8 @@ class Chat(Base):
 
 class ChatMessage(Base):
     __tablename__ = "chat_message"
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    chat_id: Mapped[uuid.UUID] = mapped_column(
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    chat_id: Mapped[UUID] = mapped_column(
         ForeignKey("chat.id"),
     )
 
@@ -89,16 +93,53 @@ class ChatMessage(Base):
         return f"ChatMessage(id={self.id!r}, chat_id={self.chat_id!r}, sender={self.sender!r}, created_at={self.created_at!r}, updated_at={self.updated_at!r}), content={self.content}"
 
 
+class MemoryEmbedding(Base):
+    __tablename__ = "memory_embedding"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
+    memory_id: Mapped[Optional[UUID]] = mapped_column(
+        ForeignKey("memory_structured.id"), nullable=True
+    )
+    content: Mapped[str] = mapped_column(Text)
+    embedding: Mapped[List[float]] = mapped_column(
+        Vector(settings.EMBEDDING_DIMENSIONS)
+    )
+
+    user: Mapped["User"] = relationship("User")
+    memory: Mapped[Optional["MemoryStructured"]] = relationship("MemoryStructured")
+
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), onupdate=func.now(), nullable=True
+    )
+
+    __table_args__ = (
+        Index(
+            "idx_memory_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
+    )
+
+    def __repr__(self):
+        return f"MemoryEmbedding(id={self.id!r}, user_id={self.user_id!r}, content={self.content!r})"
+
+
 class MemoryStructured(Base):
     __tablename__ = "memory_structured"
 
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"))
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
     key: Mapped[str] = mapped_column(String(100))
     value: Mapped[str] = mapped_column(Text)
     confidence: Mapped[float] = mapped_column(Float, default=1.0)
 
-    superseded_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+    superseded_by: Mapped[Optional[UUID]] = mapped_column(
         Uuid,
         nullable=True,
     )
@@ -129,9 +170,9 @@ class MemoryStructured(Base):
 class MemoryLog(Base):
     __tablename__ = "memory_log"
 
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"))
-    message_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chat_message.id"))
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
+    message_id: Mapped[UUID] = mapped_column(ForeignKey("chat_message.id"))
 
     gate_decision: Mapped[str] = mapped_column(String(30))
 
