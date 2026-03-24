@@ -1,46 +1,31 @@
-# class LongTermMemory:
-#     def __init__(self, memory_extractor: MemoryExtractor):
-#         self.memory_extractor = memory_extractor
+from typing import List
 
-#     async def process_and_store(self, message: str, user_id: UUID):
-#         extracted_memories = await self.memory_extractor.extract(message, user_id)
-#         await self.memory_extractor.persist_memory(extracted_memories, user_id)
+from sentence_transformers import SentenceTransformer
+
+_model: SentenceTransformer | None = None
 
 
-# # Requires transformers>=4.51.0
-# # Requires sentence-transformers>=2.7.0
+def _get_model() -> SentenceTransformer:
+    global _model
+    if _model is None:
+        _model = SentenceTransformer("Qwen/Qwen3-Embedding-0.6B")
+    return _model
 
-# from sentence_transformers import SentenceTransformer
 
-# # Load the model
-# model = SentenceTransformer("Qwen/Qwen3-Embedding-0.6B")
+class LongTermSemanticMemory:
+    def __init__(self):
+        self.model = _get_model()
+        # We recommend enabling flash_attention_2 for better acceleration and memory saving,
+        # together with setting `padding_side` to "left":
+        # model = SentenceTransformer(
+        #     "Qwen/Qwen3-Embedding-0.6B",
+        #     model_kwargs={"attn_implementation": "flash_attention_2", "device_map": "auto"},
+        #     tokenizer_kwargs={"padding_side": "left"},
+        # )
 
-# # We recommend enabling flash_attention_2 for better acceleration and memory saving,
-# # together with setting `padding_side` to "left":
-# # model = SentenceTransformer(
-# #     "Qwen/Qwen3-Embedding-0.6B",
-# #     model_kwargs={"attn_implementation": "flash_attention_2", "device_map": "auto"},
-# #     tokenizer_kwargs={"padding_side": "left"},
-# # )
+    def create_embeddings(self, texts: List[str], is_query: bool = False):
+        prompt_name = "query" if is_query else None
+        return self.model.encode(texts, prompt_name=prompt_name)
 
-# # The queries and documents to embed
-# queries = [
-#     "What is the capital of China?",
-#     "Explain gravity",
-# ]
-# documents = [
-#     "The capital of China is Beijing.",
-#     "Gravity is a force that attracts two bodies towards each other. It gives weight to physical objects and is responsible for the movement of planets around the sun.",
-# ]
-
-# # Encode the queries and documents. Note that queries benefit from using a prompt
-# # Here we use the prompt called "query" stored under `model.prompts`, but you can
-# # also pass your own prompt via the `prompt` argument
-# query_embeddings = model.encode(queries, prompt_name="query")
-# document_embeddings = model.encode(documents)
-
-# # Compute the (cosine) similarity between the query and document embeddings
-# similarity = model.similarity(query_embeddings, document_embeddings)
-# print(similarity)
-# # tensor([[0.7646, 0.1414],
-# #         [0.1355, 0.6000]])
+    def compute_similarity(self, query_embeddings, document_embeddings):
+        return self.model.similarity(query_embeddings, document_embeddings)

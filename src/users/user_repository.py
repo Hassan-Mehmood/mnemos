@@ -1,10 +1,10 @@
-import uuid
 from typing import List
+from uuid import UUID, uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database.models import MemoryStructured
+from src.database.models import MemoryEmbedding, MemoryStructured
 from src.schemas.memory_extractor_schema import ExtractorOutput
 
 
@@ -12,7 +12,7 @@ class UserRepository:
     def __init__(self, conn: AsyncSession):
         self.conn = conn
 
-    async def get_memory(self, user_id: uuid.UUID, key: str):
+    async def get_memory(self, user_id: UUID, key: str):
         result = await self.conn.execute(
             select(MemoryStructured).where(
                 MemoryStructured.user_id == user_id,
@@ -26,18 +26,14 @@ class UserRepository:
         return memory
 
     async def save_memories(
-        self, memories: List[ExtractorOutput], user_id: uuid.UUID
+        self,
+        kv_memories: List[ExtractorOutput],
+        embeddings: List,
+        user_id: UUID,
     ) -> None:
-        for memory in memories:
-            existing = await self.get_memory(user_id, memory.key)
-            new_id = uuid.uuid4()
-
-            if existing is not None:
-                existing.superseded_by = new_id
-                await self.conn.flush()
-
+        for memory, embedding in zip(kv_memories, embeddings):
             new_record = MemoryStructured(
-                id=new_id,
+                id=uuid4(),
                 user_id=user_id,
                 key=memory.key,
                 value=memory.value,
@@ -46,9 +42,18 @@ class UserRepository:
             self.conn.add(new_record)
             await self.conn.flush()
 
+            embedding_record = MemoryEmbedding(
+                id=uuid4(),
+                user_id=user_id,
+                memory_id=new_record.id,
+                content=f"{memory.key}: {memory.value}",
+                embedding=embedding,
+            )
+            self.conn.add(embedding_record)
+
         await self.conn.commit()
 
-    async def get_user_memories(self, user_id: uuid.UUID) -> List[ExtractorOutput]:
+    async def get_user_memories(self, user_id: UUID) -> List[ExtractorOutput]:
         result = await self.conn.execute(
             select(MemoryStructured)
             .where(

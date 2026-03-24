@@ -8,6 +8,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from src.config import get_settings
 from src.database.database import sessionmanager
 from src.logger import logger
+from src.memory.long_term_memory import LongTermSemanticMemory
 from src.schemas.memory_extractor_schema import ExtractorOutput
 from src.users.user_repository import UserRepository
 from src.utils.system_prompts import EXTRACTION_PROMPT
@@ -30,10 +31,9 @@ class MemoryExtractor:
 
     async def extract(self, message: str, user_id: UUID) -> None:
         user_memories = await self.user_repository.get_user_memories(user_id)
-
         kv_pairs = await self.extract_kv_pairs(message, user_memories)
 
-        await self.persist_memory(kv_pairs, user_id)
+        await self.persist_memory(message=message, memories=kv_pairs, user_id=user_id)
 
     async def extract_kv_pairs(
         self, message: str, user_memories: List[ExtractorOutput]
@@ -43,8 +43,9 @@ class MemoryExtractor:
             for mem in user_memories
         )
 
-        prompt = f"USER MEMORIES:\n{user_memories_str}\n\nCURRENT MESSAGE:\n{message}"
+        prompt = f"USER MEMORIES:\n\n{user_memories_str}\n\nCURRENT MESSAGE:\n{message}"
 
+        print(f"Running MemoryExtractor with prompt:\n{prompt}\n---END OF PROMPT---")
         response = await self.memory_extractor_agent.run(prompt)
         logger.info(f"Extracted KV pairs: {response.output}")
 
@@ -53,8 +54,22 @@ class MemoryExtractor:
     async def create_memory_embeddings(self, kv_pairs: List[ExtractorOutput]):
         pass
 
-    async def persist_memory(self, memories: List[ExtractorOutput], user_id: UUID):
+    async def persist_memory(
+        self, message: str, memories: List[ExtractorOutput], user_id: UUID
+    ):
         # TODO: Comeback to this - we should ideally have a more robust way to handle DB sessions in background tasks
         async with sessionmanager.session() as session:
             repo = UserRepository(conn=session)
-            await repo.save_memories(memories, user_id)
+            long_term_memory = (
+                LongTermSemanticMemory()
+            )  # TODO: Can we avoid instantiating this every time?
+
+            embeddings = long_term_memory.create_embeddings(
+                [f"{mem.key}: {mem.value}" for mem in memories]
+            )
+
+            await repo.save_memories(
+                kv_memories=memories,
+                embeddings=embeddings,  # type: ignore
+                user_id=user_id,
+            )

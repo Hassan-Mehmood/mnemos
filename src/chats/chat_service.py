@@ -60,6 +60,7 @@ class ChatService:
                 payload.message,
                 payload.user_id,
             )
+
             backgroundTasks.add_task(
                 self.chat_repository.save_bot_message,
                 payload.chat_id,  # type: ignore

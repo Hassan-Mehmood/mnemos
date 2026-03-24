@@ -1,4 +1,3 @@
-import asyncio
 from typing import List
 from uuid import UUID
 
@@ -8,6 +7,7 @@ from src.chats.chat_enums import ChatMessageDict
 from src.chats.chat_repository import ChatRepository
 from src.logger import logger
 from src.memory.factual_memory import FactualMemory
+from src.memory.long_term_memory import LongTermSemanticMemory
 from src.memory.memory_gate import GateDecision, MemoryGate
 from src.memory.memory_log_repository import MemoryLogRepository
 from src.memory.short_term_memory import ShortTermMemory
@@ -26,11 +26,16 @@ class MemoryRetriever:
         user_repository: UserRepository,
         memory_log_repository: MemoryLogRepository,
     ):
+        # repositories
         self.chat_repository = chat_repository
         self.user_repository = user_repository
         self.memory_log_repository = memory_log_repository
 
+        # memory gate
         self.memory_gate = MemoryGate()
+
+        # memory modules
+        self.long_term_memory = LongTermSemanticMemory()
         self.factual_memory = FactualMemory(user_repository=self.user_repository)
         self.short_term_memory = ShortTermMemory(
             chat_repository=self.chat_repository,
@@ -40,8 +45,8 @@ class MemoryRetriever:
     async def retrieve(
         self, chat_id: UUID, user_id: UUID, message_id: UUID, query: str
     ) -> RetrievedMemory:
-        should_fetch_factual, reason = await self.memory_gate.should_extract(query)
-        decision = GateDecision.EXTRACT if should_fetch_factual else GateDecision.SKIP
+        should_fetch_memory, reason = await self.memory_gate.should_extract(query)
+        decision = GateDecision.EXTRACT if should_fetch_memory else GateDecision.SKIP
 
         logger.info(f"MemoryGate [{decision}] | reason: {reason} | query: '{query}'")
 
@@ -52,13 +57,14 @@ class MemoryRetriever:
             reason=reason,
         )
 
-        tasks: List = [self.short_term_memory.prepare(chat_id=chat_id, query=query)]
-        if should_fetch_factual:
-            tasks.append(self.factual_memory.prepare(user_id=user_id, query=query))
+        short_term = await self.short_term_memory.prepare(chat_id=chat_id, query=query)
 
-        results = await asyncio.gather(*tasks)
+        factual = []
+        if should_fetch_memory:
+            factual = await self.factual_memory.prepare(user_id=user_id, query=query)
+            # semantic = await self.long_term_memory.prepare(user_id=user_id, query=query)
 
         return RetrievedMemory(
-            short_term=results[0],
-            factual=results[1] if should_fetch_factual else [],
+            short_term=short_term,
+            factual=factual,
         )

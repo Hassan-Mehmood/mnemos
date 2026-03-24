@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = Field(...)
     DATABASE_URL: str = Field(...)
     GROQ_API_KEY: str = Field(...)
+    HF_TOKEN: str = Field(...)
 
     EMBEDDING_DIMENSIONS: int = Field(1024, description="Qwen3-Embedding-0.6B")
 

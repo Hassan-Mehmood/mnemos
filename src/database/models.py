@@ -172,7 +172,9 @@ class MemoryLog(Base):
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
-    message_id: Mapped[UUID] = mapped_column(ForeignKey("chat_message.id"))
+    message_id: Mapped[UUID] = mapped_column(
+        ForeignKey("chat_message.id", ondelete="CASCADE")
+    )
 
     gate_decision: Mapped[str] = mapped_column(String(30))
 
