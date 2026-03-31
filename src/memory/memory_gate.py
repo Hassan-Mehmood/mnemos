@@ -6,7 +6,7 @@ from pydantic_ai import Agent
 from pydantic_ai.models.groq import GroqModel
 from pydantic_ai.providers.groq import GroqProvider
 
-from src.config import get_settings
+from src.core.config import get_settings
 
 settings = get_settings()
 

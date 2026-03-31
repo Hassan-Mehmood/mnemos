@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from src.chats.chat_enums import ChatMessageDict
 from src.chats.chat_repository import ChatRepository
-from src.logger import logger
+from src.core.logger import logger
 from src.memory.factual_memory import FactualMemory
 from src.memory.long_term_memory import LongTermSemanticMemory
 from src.memory.memory_gate import GateDecision, MemoryGate

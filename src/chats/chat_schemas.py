@@ -1,6 +1,6 @@
 import uuid
 
-from src.schemas.base_schema import BaseSchema
+from src.base_schema import BaseSchema
 
 
 class ChatInvoke(BaseSchema):

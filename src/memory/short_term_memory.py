@@ -2,7 +2,7 @@ import uuid
 
 from src.chats.chat_enums import ChatMessageDict
 from src.chats.chat_repository import ChatRepository
-from src.database.db_enums import MessageSender
+from src.core.database.db_enums import MessageSender
 
 
 class ShortTermMemory:

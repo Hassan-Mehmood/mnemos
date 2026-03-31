@@ -4,8 +4,8 @@ from uuid import UUID, uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database.models import MemoryEmbedding, MemoryStructured
-from src.schemas.memory_extractor_schema import ExtractorOutput
+from src.core.database.models import MemoryEmbedding, MemoryStructured
+from src.memory.schemas.memory_extractor_schema import ExtractorOutput
 
 
 class UserRepository:

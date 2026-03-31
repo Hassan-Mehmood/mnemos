@@ -16,9 +16,9 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.config import get_settings
-from src.database import Base
-from src.database.db_enums import MessageSender
+from src.core.config import get_settings
+from src.core.database import Base
+from src.core.database.db_enums import MessageSender
 
 settings = get_settings()
 

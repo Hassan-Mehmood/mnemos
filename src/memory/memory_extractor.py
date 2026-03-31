@@ -5,11 +5,11 @@ from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
-from src.config import get_settings
-from src.database.database import sessionmanager
-from src.logger import logger
+from src.core.config import get_settings
+from src.core.database.database import sessionmanager
+from src.core.logger import logger
 from src.memory.long_term_memory import LongTermSemanticMemory
-from src.schemas.memory_extractor_schema import ExtractorOutput
+from src.memory.schemas.memory_extractor_schema import ExtractorOutput
 from src.users.user_repository import UserRepository
 from src.utils.system_prompts import EXTRACTION_PROMPT
 

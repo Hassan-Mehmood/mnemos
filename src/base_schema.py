@@ -2,13 +2,9 @@ from datetime import datetime
 from typing import Generic, Optional, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_camel
 
 T = TypeVar("T")
-
-
-def to_camel(string: str) -> str:
-    parts = string.split("_")
-    return parts[0] + "".join(word.capitalize() for word in parts[1:])
 
 
 class BaseQueryParams(BaseModel):
@@ -42,13 +38,13 @@ class PaginatedResponse(BaseSchema, Generic[T]):
     pagination: PaginationMeta = Field(description="Pagination of the response")
 
 
-class ErrorDetail(BaseModel):
+class ErrorDetail(BaseSchema):
     code: str
     message: str
     details: Optional[dict] = None
 
 
-class ErrorResponse(BaseModel):
+class ErrorResponse(BaseSchema):
     success: bool = Field(default=False, description="Success of the response")
     error: ErrorDetail = Field(description="Error of the response")
 

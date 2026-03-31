@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database.models import MemoryLog
+from src.core.database.models import MemoryLog
 from src.memory.memory_gate import GateDecision
 
 

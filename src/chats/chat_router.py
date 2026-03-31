@@ -4,12 +4,12 @@ from typing import List
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 
+from src.base_schema import SuccessResponse
 from src.chats.chat_schemas import AllChatsResponse, ChatInvoke, ChatMessagesResponse
 from src.chats.chat_service import ChatService
 from src.chats.chat_utils import get_chat_service
-from src.database.models import Chat
-from src.logger import logger
-from src.schemas.base_schema import SuccessResponse
+from src.core.database.models import Chat
+from src.core.logger import logger
 
 router = APIRouter(prefix="/chats", tags=["chats"])
 

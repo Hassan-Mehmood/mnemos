@@ -3,8 +3,8 @@ from collections.abc import Sequence
 from src.chats.chat_enums import ChatMessageDict
 from src.chats.chat_repository import ChatRepository
 from src.chats.chat_service import ChatService
-from src.database.database import DBSession
-from src.database.models import ChatMessage
+from src.core.database.database import DBSession
+from src.core.database.models import ChatMessage
 from src.memory.memory_log_repository import MemoryLogRepository
 from src.users.user_repository import UserRepository
 

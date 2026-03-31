@@ -3,8 +3,8 @@ from typing import AsyncGenerator, List
 from openai import OpenAI
 
 from src.chats.chat_enums import ChatMessageDict
-from src.config import get_settings
-from src.schemas.memory_extractor_schema import ExtractorOutput
+from src.core.config import get_settings
+from src.memory.schemas.memory_extractor_schema import ExtractorOutput
 from src.utils.system_prompts import CHAT_PROMPT
 
 

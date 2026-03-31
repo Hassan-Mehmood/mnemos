@@ -4,7 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.chats.chat_router import router as chat_router
-from src.database.database import sessionmanager
+from src.core.database.database import sessionmanager
+from src.memory.long_term_memory import LongTermSemanticMemory
 
 
 @asynccontextmanager
@@ -12,6 +13,7 @@ async def lifespan(app: FastAPI):
     """
     Function that handles startup and shutdown events.
     """
+    LongTermSemanticMemory()
     yield
     if sessionmanager._engine is not None:
         # Close the DB connection

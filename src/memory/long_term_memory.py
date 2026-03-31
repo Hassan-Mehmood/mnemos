@@ -13,15 +13,14 @@ def _get_model() -> SentenceTransformer:
 
 
 class LongTermSemanticMemory:
-    def __init__(self):
-        self.model = _get_model()
-        # We recommend enabling flash_attention_2 for better acceleration and memory saving,
-        # together with setting `padding_side` to "left":
-        # model = SentenceTransformer(
-        #     "Qwen/Qwen3-Embedding-0.6B",
-        #     model_kwargs={"attn_implementation": "flash_attention_2", "device_map": "auto"},
-        #     tokenizer_kwargs={"padding_side": "left"},
-        # )
+    instance: "LongTermSemanticMemory | None" = None
+    model: SentenceTransformer
+
+    def __new__(cls):
+        if cls.instance is None:
+            cls.instance = super().__new__(cls)
+            cls.instance.model = _get_model()
+        return cls.instance
 
     def create_embeddings(self, texts: List[str], is_query: bool = False):
         prompt_name = "query" if is_query else None
