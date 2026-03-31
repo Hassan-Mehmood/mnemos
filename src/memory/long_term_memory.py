@@ -23,8 +23,13 @@ class LongTermSemanticMemory:
         return cls.instance
 
     def create_embeddings(self, texts: List[str], is_query: bool = False):
-        prompt_name = "query" if is_query else None
-        return self.model.encode(texts, prompt_name=prompt_name)
+        if is_query:
+            # prepend task instruction for queries
+            texts = [
+                f"Instruct: Given a user query, retrieve relevant personal facts\nQuery: {t}"
+                for t in texts
+            ]
+        return self.model.encode(texts)
 
     def compute_similarity(self, query_embeddings, document_embeddings):
         return self.model.similarity(query_embeddings, document_embeddings)

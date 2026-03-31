@@ -3,8 +3,8 @@ from enum import Enum
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
-from pydantic_ai.models.groq import GroqModel
-from pydantic_ai.providers.groq import GroqProvider
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
 
 from src.core.config import get_settings
 
@@ -12,7 +12,7 @@ settings = get_settings()
 
 
 class GateDecision(str, Enum):
-    EXTRACT = "EXTRACT"
+    RETRIEVE = "RETRIEVE"
     SKIP = "SKIP"
 
 
@@ -22,25 +22,29 @@ class GateOutput(BaseModel):
 
 
 GATE_PROMPT = """
-You are a memory gate for a personal AI assistant.
-Your ONLY job is to decide if a user message contains personal facts worth remembering long-term.
+You are a retrieval gate for a personal AI assistant.
+Your ONLY job is to decide if answering a user message requires fetching personal context from memory.
 
-Return EXTRACT if the message contains:
-- Personal identity facts ("I'm a backend engineer", "I cofounded a startup")
-- Preferences or opinions about their own choices ("I prefer Python", "I hate meetings")
-- Goals or intentions ("I want to transition into AI", "I'm trying to get promoted")
-- Current projects or work context ("I'm building a SaaS", "just switched my stack to Go")
-- Constraints or life context ("I only have weekends", "I work at a small startup")
+Return RETRIEVE if answering well requires knowing personal context about the user, such as:
+- Questions about themselves ("what's my name", "what are my goals", "who am i")
+- Requests for personalised advice ("what should I learn next", "which framework should I use")
+- Messages that reference their situation ("help me with my project", "based on my stack")
+- Ambiguous requests where personal context changes the answer ("what should I do", "is this a good idea")
+- Follow-up messages in a personal conversation ("what about me", "and in my case")
 
-Return SKIP if the message is:
-- A general question ("how does recursion work", "what is async/await")
-- A task request with no personal context ("help me understand binary trees")
-- About someone else ("my friend thinks I should learn Rust")
-- Hypothetical or roleplay ("pretend you are a Python expert")
-- Uncertain/weak signal ("I'm not sure about this")
+Return SKIP if the message can be answered well without knowing anything about the user, such as:
+- Pure knowledge questions ("how does recursion work", "what is async/await")
+- General task requests with no personal angle ("write a regex for emails", "explain binary trees")
+- Math or factual lookups ("what is 15% of 340", "when was Python created")
+- Hypothetical or roleplay scenarios ("pretend you are a Rust expert")
+- Questions about someone else ("my friend wants to learn ML, where should they start")
 
-Be aggressive about SKIP. When in doubt, SKIP.
-Only EXTRACT when there is a clear, unambiguous personal fact.
+The question to ask yourself:
+Would knowing personal facts about this user change the answer meaningfully?
+If yes → RETRIEVE. If no → SKIP.
+
+Be aggressive about SKIP for pure knowledge questions.
+Be aggressive about RETRIEVE when the message is personal or advice-seeking.
 
 Message: {message}
 """
@@ -73,18 +77,30 @@ class MemoryGate:
         r"\bi (just |have )?(quit|joined|started|founded|cofounded|launched)\b",
     ]
 
+    HARD_RETRIEVE_PATTERNS = [
+        r"\bwhat('?s| is| are) my\b",  # "what's my name", "what are my goals"
+        r"\bwho am i\b",
+        r"\bdo you remember me\b",
+        r"\bwhat do you know about me\b",
+        r"\btell me about me\b",
+    ]
+
     def __init__(self):
         self.llm_gate = Agent(
-            model=GroqModel(
-                "llama-3.1-8b-instant",  # fast + cheap, not your main model
-                provider=GroqProvider(api_key=settings.GROQ_API_KEY),
+            model=OpenAIChatModel(
+                settings.MEMORY_GATE_MODEL,
+                provider=OpenAIProvider(api_key=settings.OPENAI_API_KEY),
             ),
             system_prompt=GATE_PROMPT,
             output_type=GateOutput,
         )
 
-    async def should_extract(self, message: str) -> tuple[bool, str]:
+    async def should_retrieve(self, message: str) -> tuple[bool, str]:
         msg = message.lower().strip()
+
+        for pattern in self.HARD_RETRIEVE_PATTERNS:
+            if re.search(pattern, msg):
+                return True, f"hard_retrieve: {pattern}"
 
         # Layer 1a — hard skip
         for pattern in self.HARD_SKIP_PATTERNS:
@@ -99,6 +115,6 @@ class MemoryGate:
         # Layer 2 — ambiguous, ask the LLM
         result = await self.llm_gate.run(message)
         return (
-            result.output.decision == GateDecision.EXTRACT,
+            result.output.decision == GateDecision.RETRIEVE,
             f"llm_gate: {result.output.reason}",
         )

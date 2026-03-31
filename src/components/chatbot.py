@@ -7,6 +7,8 @@ from src.core.config import get_settings
 from src.memory.schemas.memory_extractor_schema import ExtractorOutput
 from src.utils.system_prompts import CHAT_PROMPT
 
+settings = get_settings()
+
 
 class Chatbot:
     def __init__(self):
@@ -16,7 +18,7 @@ class Chatbot:
         # TODO: Consider a new approach for this.
         # Todo: There should an invoke method that can be called from anywhere with prompts included
         response = self.client.responses.create(
-            model="gpt-4o-mini-2024-07-18", input=message
+            model=settings.CHAT_BOT_MODEL, input=message
         )
 
         return response.output_text
@@ -36,7 +38,7 @@ class Chatbot:
         print(f"Instructions: {intructions}")
 
         stream = self.client.responses.create(
-            model="gpt-4o-mini-2024-07-18",
+            model=settings.CHAT_BOT_MODEL,
             instructions=intructions,
             input=history,  # type: ignore
             stream=True,

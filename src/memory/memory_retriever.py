@@ -45,8 +45,8 @@ class MemoryRetriever:
     async def retrieve(
         self, chat_id: UUID, user_id: UUID, message_id: UUID, query: str
     ) -> RetrievedMemory:
-        should_fetch_memory, reason = await self.memory_gate.should_extract(query)
-        decision = GateDecision.EXTRACT if should_fetch_memory else GateDecision.SKIP
+        should_fetch_memory, reason = await self.memory_gate.should_retrieve(query)
+        decision = GateDecision.RETRIEVE if should_fetch_memory else GateDecision.SKIP
 
         logger.info(f"MemoryGate [{decision}] | reason: {reason} | query: '{query}'")
 
@@ -58,11 +58,27 @@ class MemoryRetriever:
         )
 
         short_term = await self.short_term_memory.prepare(chat_id=chat_id, query=query)
+        factual = await self.factual_memory.retrieve(
+            user_id=user_id, confidence_threshold=8.0
+        )
 
-        factual = []
         if should_fetch_memory:
-            factual = await self.factual_memory.prepare(user_id=user_id, query=query)
-            # semantic = await self.long_term_memory.prepare(user_id=user_id, query=query)
+            document_embeddings = await self.user_repository.get_user_memory_embeddings(
+                user_id=user_id
+            )
+
+            if document_embeddings:
+                query_embedding = self.long_term_memory.create_embeddings(
+                    [query], is_query=True
+                )
+
+                semantic = self.long_term_memory.compute_similarity(
+                    query_embeddings=query_embedding,
+                    document_embeddings=[doc.embedding for doc in document_embeddings],
+                )
+
+                print("document_embeddings:", document_embeddings)
+                print("Semantic Memory:", semantic)
 
         return RetrievedMemory(
             short_term=short_term,

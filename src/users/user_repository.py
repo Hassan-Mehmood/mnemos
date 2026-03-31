@@ -53,23 +53,24 @@ class UserRepository:
 
         await self.conn.commit()
 
-    async def get_user_memories(self, user_id: UUID) -> List[ExtractorOutput]:
+    async def get_user_memories(
+        self, user_id: UUID, confidence_threshold: float = 7.0
+    ) -> List[MemoryStructured]:
         result = await self.conn.execute(
             select(MemoryStructured)
             .where(
                 MemoryStructured.user_id == user_id,
                 MemoryStructured.superseded_by.is_(None),
+                MemoryStructured.confidence >= confidence_threshold,
             )
             .order_by(MemoryStructured.created_at.desc())
         )
 
-        memories = result.scalars().all()
+        return list(result.scalars().all())
 
-        return [
-            ExtractorOutput(
-                key=mem.key,
-                value=mem.value,
-                confidence=mem.confidence,
-            )
-            for mem in memories
-        ]
+    async def get_user_memory_embeddings(self, user_id: UUID) -> List[MemoryEmbedding]:
+        result = await self.conn.execute(
+            select(MemoryEmbedding).where(MemoryEmbedding.user_id == user_id)
+        )
+
+        return list(result.scalars().all())

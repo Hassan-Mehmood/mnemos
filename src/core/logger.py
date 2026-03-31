@@ -8,7 +8,7 @@ formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
 console_handler.setFormatter(formatter)
 
 logging.basicConfig(
-    level=logging.WARN,
+    level=logging.INFO,
     format="%(asctime)s {%(name)s} [%(levelname)s] %(message)s",
     handlers=[console_handler],
 )
