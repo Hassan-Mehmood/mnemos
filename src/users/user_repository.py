@@ -32,13 +32,21 @@ class UserRepository:
         user_id: UUID,
     ) -> None:
         for memory, embedding in zip(kv_memories, embeddings):
+            existing = await self.get_memory(user_id, memory.key)
+            new_id = uuid4()
+
+            if existing is not None:
+                existing.superseded_by = new_id
+                await self.conn.flush()
+
             new_record = MemoryStructured(
-                id=uuid4(),
+                id=new_id,
                 user_id=user_id,
                 key=memory.key,
                 value=memory.value,
                 confidence=memory.confidence,
             )
+
             self.conn.add(new_record)
             await self.conn.flush()
 
@@ -54,7 +62,7 @@ class UserRepository:
         await self.conn.commit()
 
     async def get_user_memories(
-        self, user_id: UUID, confidence_threshold: float = 7.0
+        self, user_id: UUID, confidence_threshold: float = 0.7
     ) -> List[MemoryStructured]:
         result = await self.conn.execute(
             select(MemoryStructured)

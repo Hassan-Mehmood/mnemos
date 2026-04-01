@@ -25,26 +25,33 @@ GATE_PROMPT = """
 You are a retrieval gate for a personal AI assistant.
 Your ONLY job is to decide if answering a user message requires fetching personal context from memory.
 
-Return RETRIEVE if answering well requires knowing personal context about the user, such as:
-- Questions about themselves ("what's my name", "what are my goals", "who am i")
-- Requests for personalised advice ("what should I learn next", "which framework should I use")
-- Messages that reference their situation ("help me with my project", "based on my stack")
-- Ambiguous requests where personal context changes the answer ("what should I do", "is this a good idea")
-- Follow-up messages in a personal conversation ("what about me", "and in my case")
+Return RETRIEVE only if the message is ACTIVELY REQUESTING something that personal context would change:
+- Explicit questions about themselves ("what's my name", "what are my goals", "who am i")
+- Explicit requests for personalised advice ("what should I learn next", "which framework should I use")
+- Messages that directly reference stored context ("based on my stack", "given my situation")
+- Direct follow-up questions in a personal conversation ("what about me", "and in my case")
 
-Return SKIP if the message can be answered well without knowing anything about the user, such as:
-- Pure knowledge questions ("how does recursion work", "what is async/await")
-- General task requests with no personal angle ("write a regex for emails", "explain binary trees")
+Return SKIP if:
+- The message is a STATEMENT, even if personal ("I have been learning Python", "I just finished a project")
+- The message is a pure knowledge question ("how does recursion work", "what is async/await")
+- The message is a general task request ("write a regex", "explain binary trees")
+- The message mentions personal activity but asks nothing ("I like football", "I work in fintech")
 - Math or factual lookups ("what is 15% of 340", "when was Python created")
-- Hypothetical or roleplay scenarios ("pretend you are a Rust expert")
-- Questions about someone else ("my friend wants to learn ML, where should they start")
+- Hypothetical or roleplay ("pretend you are a Rust expert")
+- Questions about someone else ("my friend wants to learn ML")
+
+CRITICAL RULE:
+A statement about the user is NOT a retrieval trigger.
+Only retrieve when the user is ASKING FOR SOMETHING that requires knowing who they are.
+
+"I have been learning Python"     → SKIP  (statement, no request)
+"What should I learn after Python?" → RETRIEVE  (request, needs their context)
+"I just launched my SaaS"         → SKIP  (statement)
+"How should I market my SaaS?"    → RETRIEVE  (request referencing their situation)
 
 The question to ask yourself:
-Would knowing personal facts about this user change the answer meaningfully?
-If yes → RETRIEVE. If no → SKIP.
-
-Be aggressive about SKIP for pure knowledge questions.
-Be aggressive about RETRIEVE when the message is personal or advice-seeking.
+Is the user ASKING FOR SOMETHING right now, AND would knowing their personal history change the answer?
+Both must be true. If either is false → SKIP.
 
 Message: {message}
 """
@@ -53,13 +60,41 @@ Message: {message}
 class MemoryGate:
     # Layer 1 — definite skips, never worth extracting
     HARD_SKIP_PATTERNS = [
+        # question starters
         r"^(what|how|why|when|where|who|which|can you|could you|explain|tell me)\b",
+        r"^(is|are|was|were|does|do|did|has|have|had|will|would|should|could)\b",
+        r"^(define|describe|list|show|give|find|calculate|compute|convert)\b",
+        # uncertainty / learning signals
         r"\bi'?m not sure\b",
         r"\bi'?m trying to understand\b",
         r"\bremember to\b",
-        r"\bhelp me (understand|learn|explain|implement|fix|debug|write)\b",
-        r"\bwhat (is|are|does|do|was|were)\b",
+        r"\bi don'?t (know|understand|get)\b",
+        r"\bcan you (explain|clarify|elaborate|describe|show)\b",
+        # help requests with no personal angle
+        r"\bhelp me (understand|learn|explain|implement|fix|debug|write|create|build|make|find|check)\b",
         r"\bhow (do|does|can|should|would|to)\b",
+        r"\bwhat (is|are|does|do|was|were|would|will)\b",
+        # pure knowledge questions
+        r"\bwhat('?s| is| are) (a|an|the) \w+",  # "what is a closure", "what's a tensor"
+        r"\b(difference between|compare|vs\.?|versus)\b",
+        r"\b(example|examples) of\b",
+        r"\bhow (does .+ work|to .+)\b",
+        # coding / technical tasks
+        r"\b(write|create|generate|build|implement|code|make) (a|an|the)?\b",
+        r"\b(fix|debug|refactor|review|optimize|improve) (this|my|the|a)?\b",
+        r"\bwhat('?s| is) (wrong|the (issue|problem|error|bug))\b",
+        r"\b(error|exception|traceback|crash|failing)\b",
+        # math / factual lookups
+        r"^\d[\d\s\+\-\*\/\%\(\)]*",  # starts with a number
+        r"\b(calculate|compute|convert|how many|how much)\b",
+        r"\bwhat('?s| is) \d",  # "what's 15% of..."
+        # about others, not the user
+        r"\b(my friend|my colleague|my teammate|my boss|my client|someone)\b",
+        r"\b(they|them|their|he|she|his|her) (want|need|is|are|should)\b",
+        # hypothetical / roleplay
+        r"\b(pretend|imagine|suppose|assume|hypothetically|what if|if you were)\b",
+        r"\bact as\b",
+        r"\brole ?play\b",
     ]
 
     # Layer 1 — definite extracts, always worth running extractor

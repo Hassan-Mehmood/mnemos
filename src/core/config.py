@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = Field(...)
     HF_TOKEN: str = Field(...)
 
+    SEMANTIC_SIMILARITY_THRESHOLD: float = 0.2
+    SEMANTIC_TOP_K: int = 5
+
     MEMORY_EXTRACTOR_MODEL: str = "gpt-5.4-nano"
     CHAT_BOT_MODEL: str = "gpt-4o-mini-2024-07-18"
     MEMORY_GATE_MODEL: str = "gpt-5.4-nano"

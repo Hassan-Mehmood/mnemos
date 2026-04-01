@@ -24,7 +24,7 @@ class Chatbot:
         return response.output_text
 
     async def stream(
-        self, history: list[ChatMessageDict], factual_memory: List[ExtractorOutput]
+        self, history: list[ChatMessageDict], factual_memory: List[ExtractorOutput], semantic_memory: List[str] = []
     ) -> AsyncGenerator[str, None]:
         intructions = CHAT_PROMPT.format(
             factual_memory="\n".join(
@@ -33,6 +33,7 @@ class Chatbot:
                     for mem in factual_memory
                 ]
             ),
+            semantic_memory="\n".join(semantic_memory) if semantic_memory else "None",
         )
 
         print(f"Instructions: {intructions}")

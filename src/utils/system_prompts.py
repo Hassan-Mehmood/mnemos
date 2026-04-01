@@ -6,6 +6,10 @@ Use these memories to provide personalized and contextually relevant responses.
 ## Factual Memory Starts
 {factual_memory}
 ## Factual Memory Ends
+
+## Semantically Relevant Memory Starts
+{semantic_memory}
+## Semantically Relevant Memory Ends
 """
 
 

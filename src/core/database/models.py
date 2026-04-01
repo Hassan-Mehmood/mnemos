@@ -178,7 +178,7 @@ class MemoryLog(Base):
 
     gate_decision: Mapped[str] = mapped_column(String(30))
 
-    gate_reason: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    gate_reason: Mapped[Optional[str]] = mapped_column(String(), nullable=True)
 
     retrieved_ids: Mapped[Optional[list]] = mapped_column(JSONB, default=list)
     used_memory_ids: Mapped[Optional[list]] = mapped_column(JSONB, default=list)

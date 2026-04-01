@@ -51,6 +51,7 @@ class ChatService:
             async for chunk in chatbot.stream(
                 history=memory.short_term,
                 factual_memory=memory.factual,
+                semantic_memory=memory.semantic,
             ):
                 full_response += chunk
                 yield chunk.encode("utf-8")
