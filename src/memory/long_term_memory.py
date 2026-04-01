@@ -24,7 +24,6 @@ class LongTermSemanticMemory:
 
     def create_embeddings(self, texts: List[str], is_query: bool = False):
         if is_query:
-            # prepend task instruction for queries
             texts = [
                 f"Instruct: Given a user query, retrieve relevant personal facts\nQuery: {t}"
                 for t in texts
