@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.chats.chat_router import router as chat_router
 from src.core.database.database import sessionmanager
 from src.memory.long_term_memory import LongTermSemanticMemory
+from src.users.user_router import router as auth_router
 
 
 @asynccontextmanager
@@ -34,7 +35,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 app.include_router(chat_router)
+app.include_router(auth_router)
 
 
 @app.get("/health")

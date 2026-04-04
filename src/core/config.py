@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = Field(...)
     HF_TOKEN: str = Field(...)
 
+    JWT_SECRET_KEY: str = Field(...)
+    JWT_ALGORITHM: str = Field(default="HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30)
+
     SEMANTIC_SIMILARITY_THRESHOLD: float = 0.2
     SEMANTIC_TOP_K: int = 5
     MEMORY_TOKEN_BUDGET: int = 800

@@ -27,6 +27,8 @@ class User(Base):
     __tablename__ = "user"
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String(30))
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255))
     fullname: Mapped[Optional[str]]
 
     chats: Mapped[List["Chat"]] = relationship(
