@@ -30,7 +30,6 @@ class ChatService:
         )
 
     async def invoke(self, payload: ChatInvoke, backgroundTasks: BackgroundTasks):
-        # Save the user message upfront so we have its ID for gate decision logging.
         message_id = await self.chat_repository.save_user_message(
             chat_id=payload.chat_id,
             content=payload.message,
@@ -41,6 +40,11 @@ class ChatService:
             user_id=payload.user_id,
             message_id=message_id,
             query=payload.message,
+        )
+
+        await self.memory_retriever.memory_log_repository.update_token_count(
+            message_id=message_id,
+            token_count=memory.tokens_used,
         )
 
         async def generator():

@@ -4,6 +4,7 @@ from typing import List, cast
 from uuid import UUID
 
 import numpy as np
+import tiktoken
 from pydantic import BaseModel
 
 from src.chats.chat_enums import ChatMessageDict
@@ -19,11 +20,18 @@ from src.users.user_repository import UserRepository
 
 settings = get_settings()
 
+_tokenizer = tiktoken.get_encoding("cl100k_base")
+
+
+def _count_tokens(text: str) -> int:
+    return len(_tokenizer.encode(text))
+
 
 class RetrievedMemory(BaseModel):
     short_term: List[ChatMessageDict]
     factual: List = []
     semantic: List[str] = []
+    tokens_used: int = 0
 
 
 class MemoryRetriever:
@@ -65,9 +73,26 @@ class MemoryRetriever:
         )
 
         short_term = await self.short_term_memory.prepare(chat_id=chat_id, query=query)
-        factual = await self.factual_memory.retrieve(
+        all_factual = await self.factual_memory.retrieve(
             user_id=user_id, confidence_threshold=0.8
         )
+
+        # Factual memory gets first priority in the token budget
+        token_budget = settings.MEMORY_TOKEN_BUDGET
+        factual = []
+        for mem in all_factual:
+            text = f'Key: {mem.key} | Value: "{mem.value}" (confidence: {mem.confidence})'
+            cost = _count_tokens(text)
+            if cost > token_budget:
+                break
+            factual.append(mem)
+            token_budget -= cost
+
+        logger.info(
+            f"FactualMemory | injected {len(factual)}/{len(all_factual)} items | "
+            f"tokens used: {settings.MEMORY_TOKEN_BUDGET - token_budget} | remaining budget: {token_budget}"
+        )
+
         top_semantic = []
         if should_fetch_memory:
             document_embeddings = await self.user_repository.get_user_memory_embeddings(
@@ -110,18 +135,23 @@ class MemoryRetriever:
 
                 ranked.sort(key=lambda x: x[0], reverse=True)
 
-                top_semantic = [
-                    doc.content
-                    for final_score, sim_score, doc in ranked[: settings.SEMANTIC_TOP_K]
-                    if sim_score >= settings.SEMANTIC_SIMILARITY_THRESHOLD
-                ]
+                top_semantic = []
+                for final_score, sim_score, doc in ranked[: settings.SEMANTIC_TOP_K]:
+                    if sim_score < settings.SEMANTIC_SIMILARITY_THRESHOLD:
+                        continue
+                    cost = _count_tokens(doc.content)
+                    if cost > token_budget:
+                        break
+                    top_semantic.append(doc.content)
+                    token_budget -= cost
 
                 logger.info(
-                    f"SemanticRetrieval | top final scores: {[round(s, 3) for s, _, _ in ranked[: settings.SEMANTIC_TOP_K]]} | kept: {len(top_semantic)}"
+                    f"SemanticRetrieval | top final scores: {[round(s, 3) for s, _, _ in ranked[: settings.SEMANTIC_TOP_K]]} | kept: {len(top_semantic)} | remaining budget: {token_budget}"
                 )
 
         return RetrievedMemory(
             short_term=short_term,
             factual=factual,
             semantic=top_semantic,
+            tokens_used=settings.MEMORY_TOKEN_BUDGET - token_budget,
         )

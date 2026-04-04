@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database.models import MemoryLog
@@ -25,3 +26,16 @@ class MemoryLogRepository:
         )
         self.conn.add(log)
         await self.conn.commit()
+
+    async def update_token_count(
+        self,
+        message_id: uuid.UUID,
+        token_count: int,
+    ) -> None:
+        result = await self.conn.execute(
+            select(MemoryLog).where(MemoryLog.message_id == message_id)
+        )
+        log = result.scalars().first()
+        if log is not None:
+            log.token_count = token_count
+            await self.conn.commit()

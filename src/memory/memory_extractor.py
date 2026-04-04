@@ -52,9 +52,6 @@ class MemoryExtractor:
 
         return response.output
 
-    async def create_memory_embeddings(self, kv_pairs: List[ExtractorOutput]):
-        pass
-
     async def persist_memory(
         self, memories: List[ExtractorOutput] | None, user_id: UUID
     ) -> None:

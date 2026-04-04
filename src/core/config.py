@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     SEMANTIC_SIMILARITY_THRESHOLD: float = 0.2
     SEMANTIC_TOP_K: int = 5
+    MEMORY_TOKEN_BUDGET: int = 800
 
     MEMORY_EXTRACTOR_MODEL: str = "gpt-5.4-nano"
     CHAT_BOT_MODEL: str = "gpt-4o-mini-2024-07-18"
