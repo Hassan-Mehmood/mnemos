@@ -28,8 +28,8 @@ class ChatRepository:
         await self.conn.commit()
         return id
 
-    async def get_all(self):
-        stmt = select(Chat).order_by(Chat.created_at.asc())
+    async def get_all(self, user_id: uuid.UUID):
+        stmt = select(Chat).where(Chat.user_id == user_id).order_by(Chat.created_at.asc())
 
         result = await self.conn.execute(stmt)
 

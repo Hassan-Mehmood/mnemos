@@ -77,8 +77,8 @@ class ChatService:
     async def create_with_id(self, id: UUID, user_id: UUID, name: str) -> UUID:
         return await self.chat_repository.create_chat_with_id(id, user_id, name)
 
-    async def get_all(self):
-        return await self.chat_repository.get_all()
+    async def get_all(self, user_id: UUID):
+        return await self.chat_repository.get_all(user_id)
 
     async def get_by_id(
         self,

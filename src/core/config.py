@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     EMBEDDING_DIMENSIONS: int = Field(1024, description="Qwen3-Embedding-0.6B")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    @field_validator("JWT_SECRET_KEY")
+    @classmethod
+    def jwt_secret_key_min_length(cls, v: str) -> str:
+        if len(v.encode("utf-8")) < 32:
+            raise ValueError(
+                "JWT_SECRET_KEY must be at least 32 bytes (use `secrets.token_hex(32)` to generate one)"
+            )
+        return v
 
 
 @lru_cache()

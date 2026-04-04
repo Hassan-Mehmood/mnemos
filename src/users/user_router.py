@@ -48,5 +48,10 @@ async def login(user_credentials: UserLogin, conn: DBSession):
 
     return SuccessResponse(
         message="Login successful",
-        data=Token(access_token=access_token, token_type="bearer"),
+        data=Token(
+            access_token=access_token,
+            token_type="bearer",
+            email=user.email,
+            name=user.name,
+        ),
     )

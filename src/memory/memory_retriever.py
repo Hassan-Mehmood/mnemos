@@ -60,6 +60,7 @@ class MemoryRetriever:
     async def retrieve(
         self, chat_id: UUID, user_id: UUID, message_id: UUID, query: str
     ) -> RetrievedMemory:
+
         should_fetch_memory, reason = await self.memory_gate.should_retrieve(query)
         decision = GateDecision.RETRIEVE if should_fetch_memory else GateDecision.SKIP
 
@@ -81,7 +82,9 @@ class MemoryRetriever:
         token_budget = settings.MEMORY_TOKEN_BUDGET
         factual = []
         for mem in all_factual:
-            text = f'Key: {mem.key} | Value: "{mem.value}" (confidence: {mem.confidence})'
+            text = (
+                f'Key: {mem.key} | Value: "{mem.value}" (confidence: {mem.confidence})'
+            )
             cost = _count_tokens(text)
             if cost > token_budget:
                 break

@@ -1,7 +1,7 @@
 import uuid
 from typing import List
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 
 from src.base_schema import SuccessResponse
@@ -63,9 +63,14 @@ async def invoke_chat(
 
 
 @router.get("", response_model=SuccessResponse[List[AllChatsResponse]])
-async def get_all_chats_for_user(chat_service: ChatService = Depends(get_chat_service)):
+async def get_all_chats_for_user(
+    user_id: uuid.UUID = Query(
+        ..., description="The ID of the user to retrieve chats for", alias="userId"
+    ),
+    chat_service: ChatService = Depends(get_chat_service),
+):
     try:
-        chats = await chat_service.get_all()
+        chats = await chat_service.get_all(user_id)
 
         return SuccessResponse[List[AllChatsResponse]](
             success=True,
@@ -86,9 +91,21 @@ async def get_all_chats_for_user(chat_service: ChatService = Depends(get_chat_se
 
 @router.get("/{chat_id}", response_model=SuccessResponse[List[ChatMessagesResponse]])
 async def get_chat(
-    chat_id: uuid.UUID, chat_service: ChatService = Depends(get_chat_service)
+    chat_id: uuid.UUID,
+    user_id: uuid.UUID = Query(
+        ..., description="The ID of the user requesting the chat", alias="userId"
+    ),
+    chat_service: ChatService = Depends(get_chat_service),
 ):
     try:
+        chat = await chat_service.get_by_id(chat_id)
+
+        if not chat or chat.user_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden",
+            )
+
         messages = await chat_service.get_chat_messages(id=chat_id)
 
         data = [ChatMessagesResponse.model_validate(message) for message in messages]
@@ -112,9 +129,21 @@ async def get_chat(
 
 @router.delete("/{chat_id}", response_model=SuccessResponse[None])
 async def delete_chat(
-    chat_id: uuid.UUID, chat_service: ChatService = Depends(get_chat_service)
+    chat_id: uuid.UUID,
+    user_id: uuid.UUID = Query(
+        ..., description="The ID of the user requesting deletion", alias="userId"
+    ),
+    chat_service: ChatService = Depends(get_chat_service),
 ):
     try:
+        chat = await chat_service.get_by_id(chat_id)
+
+        if not chat or chat.user_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden",
+            )
+
         await chat_service.delete_chat(chat_id)
 
         return SuccessResponse[None](
