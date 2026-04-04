@@ -1,4 +1,6 @@
-from typing import List
+import math
+from datetime import datetime, timezone
+from typing import List, cast
 from uuid import UUID
 
 import numpy as np
@@ -84,22 +86,38 @@ class MemoryRetriever:
                     ),
                 )
 
-                scores = similarity[0].tolist()
-                scored_docs = sorted(
-                    zip(scores, document_embeddings),
-                    key=lambda x: x[0],
-                    reverse=True,
-                )
+                sim_scores = similarity[0].tolist()
+                now = datetime.now(timezone.utc)
+
+                ranked = []
+                for sim_score, doc in zip(sim_scores, document_embeddings):
+                    importance_score = doc.memory.confidence
+
+                    # recency: exponential decay with 30-day half-life
+                    created_at = cast(datetime, doc.created_at)
+                    if created_at.tzinfo is None:
+                        created_at = created_at.replace(tzinfo=timezone.utc)
+
+                    days_old = (now - created_at).total_seconds() / 86400.0
+                    recency_score = math.exp(-days_old / 30.0)
+
+                    final_score = (
+                        (0.6 * sim_score)
+                        + (0.3 * importance_score)
+                        + (0.1 * recency_score)
+                    )
+                    ranked.append((final_score, sim_score, doc))
+
+                ranked.sort(key=lambda x: x[0], reverse=True)
+
                 top_semantic = [
                     doc.content
-                    for score, doc in scored_docs[: settings.SEMANTIC_TOP_K]
-                    if score >= settings.SEMANTIC_SIMILARITY_THRESHOLD
+                    for final_score, sim_score, doc in ranked[: settings.SEMANTIC_TOP_K]
+                    if sim_score >= settings.SEMANTIC_SIMILARITY_THRESHOLD
                 ]
 
-                logger.info(f"Top semantics: {top_semantic}")
-
                 logger.info(
-                    f"SemanticRetrieval | top scores: {[round(s, 3) for s, _ in scored_docs[: settings.SEMANTIC_TOP_K]]} | kept: {len(top_semantic)}"
+                    f"SemanticRetrieval | top final scores: {[round(s, 3) for s, _, _ in ranked[: settings.SEMANTIC_TOP_K]]} | kept: {len(top_semantic)}"
                 )
 
         return RetrievedMemory(

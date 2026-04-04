@@ -38,10 +38,10 @@ You are a memory extraction system for a personal AI assistant. Extract stable, 
 - If similar keys exist in memory, update values/confidence — don't create new keys
 
 ## Confidence
-- **8–10**: Explicitly stated
-- **5–7**: Implied/inferred
-- **2–4**: Uncertain or possibly temporary
-- **0–1**: Very weak signal
+- **0.8–1.0**: Explicitly stated
+- **0.5–0.7**: Implied/inferred
+- **0.2–0.4**: Uncertain or possibly temporary
+- **0.0–0.1**: Very weak signal
 
 [
   {"key": "snake_case_key", "value": "concise value", "confidence": 0.0}
@@ -49,12 +49,12 @@ You are a memory extraction system for a personal AI assistant. Extract stable, 
 
 ## Examples
 "I'm a backend engineer working in Python, transitioning into AI engineering"
-→ [{"key": "occupation", "value": "backend engineer", "confidence": 1}, {"key": "preferred_language", "value": "Python", "confidence": 8}, {"key": "career_goal", "value": "transition into AI engineering", "confidence": 9}]
+→ [{"key": "occupation", "value": "backend engineer", "confidence": 1.0}, {"key": "preferred_language", "value": "Python", "confidence": 0.9}, {"key": "career_goal", "value": "transition into AI engineering", "confidence": 0.9}]
 
 "what's the difference between REST and GraphQL?" → None
 
 "I only have 5 hours a week for this side project"
-→ [{"key": "side_project", "value": "in progress", "confidence": 0.7}, {"key": "time_constraint", "value": "~5 hours per week", "confidence": 8}]
+→ [{"key": "side_project", "value": "in progress", "confidence": 0.7}, {"key": "time_constraint", "value": "~5 hours per week", "confidence": 0.8}]
 
 BELOW IS THE USER'S MEMORY FROM PREVIOUS CONVERSATIONS:
 """

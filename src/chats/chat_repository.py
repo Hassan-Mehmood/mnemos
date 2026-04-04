@@ -20,6 +20,14 @@ class ChatRepository:
         await self.conn.refresh(new_chat)
         return new_chat.id
 
+    async def create_chat_with_id(
+        self, id: uuid.UUID, user_id: uuid.UUID, name: str
+    ) -> uuid.UUID:
+        new_chat = Chat(id=id, user_id=user_id, name=name)
+        self.conn.add(new_chat)
+        await self.conn.commit()
+        return id
+
     async def get_all(self):
         stmt = select(Chat).order_by(Chat.created_at.asc())
 

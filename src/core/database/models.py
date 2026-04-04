@@ -98,8 +98,8 @@ class MemoryEmbedding(Base):
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
-    memory_id: Mapped[Optional[UUID]] = mapped_column(
-        ForeignKey("memory_structured.id"), nullable=True
+    memory_id: Mapped[UUID] = mapped_column(
+        ForeignKey("memory_structured.id"), nullable=False
     )
     content: Mapped[str] = mapped_column(Text)
     embedding: Mapped[List[float]] = mapped_column(
@@ -107,7 +107,7 @@ class MemoryEmbedding(Base):
     )
 
     user: Mapped["User"] = relationship("User")
-    memory: Mapped[Optional["MemoryStructured"]] = relationship("MemoryStructured")
+    memory: Mapped["MemoryStructured"] = relationship("MemoryStructured")
 
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -137,7 +137,7 @@ class MemoryStructured(Base):
     user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
     key: Mapped[str] = mapped_column(String(100))
     value: Mapped[str] = mapped_column(Text)
-    confidence: Mapped[float] = mapped_column(Float, default=1.0)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0, server_default="0.0")
 
     superseded_by: Mapped[Optional[UUID]] = mapped_column(
         Uuid,

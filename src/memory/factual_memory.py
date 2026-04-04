@@ -13,10 +13,10 @@ class FactualMemory:
         # self.memory: list[ChatMessageDict] = []
 
     async def retrieve(
-        self, user_id: UUID, confidence_threshold: float = 7.0
+        self, user_id: UUID, confidence_threshold: float = 0.7
     ) -> List[ExtractorOutput]:
-        if confidence_threshold < 0 or confidence_threshold > 10:
-            raise ValueError("Confidence threshold must be between 0 and 10.")
+        if confidence_threshold < 0 or confidence_threshold > 1:
+            raise ValueError("Confidence threshold must be between 0 and 1.")
 
         user_memories = await self.chat_repository.get_user_memories(
             user_id=user_id, confidence_threshold=confidence_threshold

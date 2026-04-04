@@ -30,9 +30,6 @@ class ChatService:
         )
 
     async def invoke(self, payload: ChatInvoke, backgroundTasks: BackgroundTasks):
-        if payload.chat_id is None:
-            raise ValueError("Chat ID must be provided for invoking chat.")
-
         # Save the user message upfront so we have its ID for gate decision logging.
         message_id = await self.chat_repository.save_user_message(
             chat_id=payload.chat_id,
@@ -72,6 +69,9 @@ class ChatService:
 
     async def create(self, user_id: UUID, name: str) -> UUID:
         return await self.chat_repository.create_chat(user_id, name)
+
+    async def create_with_id(self, id: UUID, user_id: UUID, name: str) -> UUID:
+        return await self.chat_repository.create_chat_with_id(id, user_id, name)
 
     async def get_all(self):
         return await self.chat_repository.get_all()

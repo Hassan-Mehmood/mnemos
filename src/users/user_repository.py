@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.core.database.models import MemoryEmbedding, MemoryStructured
 from src.memory.schemas.memory_extractor_schema import ExtractorOutput
@@ -78,7 +79,9 @@ class UserRepository:
 
     async def get_user_memory_embeddings(self, user_id: UUID) -> List[MemoryEmbedding]:
         result = await self.conn.execute(
-            select(MemoryEmbedding).where(MemoryEmbedding.user_id == user_id)
+            select(MemoryEmbedding)
+            .options(selectinload(MemoryEmbedding.memory))
+            .where(MemoryEmbedding.user_id == user_id)
         )
 
         return list(result.scalars().all())

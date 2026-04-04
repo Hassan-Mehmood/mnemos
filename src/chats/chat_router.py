@@ -21,34 +21,24 @@ async def invoke_chat(
     chat_service: ChatService = Depends(get_chat_service),
 ):
     try:
-        if chat_request.chat_id is None:
+        existing_chat = await chat_service.get_by_id(
+            chat_request.chat_id, columns=[Chat.id]
+        )
+
+        if not existing_chat:
             try:
-                chat_id = await chat_service.create(
-                    chat_request.user_id, chat_request.message
+                await chat_service.create_with_id(
+                    chat_request.chat_id, chat_request.user_id, chat_request.message
                 )
 
                 backgroundTasks.add_task(
-                    chat_service.name_chat, chat_id, chat_request.message
+                    chat_service.name_chat, chat_request.chat_id, chat_request.message
                 )
             except Exception as e:
                 logger.error(f"Error creating chat: {str(e)} | {chat_request}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to create chat",
-                )
-
-            chat_request.chat_id = chat_id
-
-        else:
-            chat_id = await chat_service.get_by_id(
-                chat_request.chat_id, columns=[Chat.id]
-            )
-            if not chat_id:
-                logger.error(
-                    f"Chat with ID {chat_request.chat_id} not found. | {chat_request}"
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found"
                 )
 
         stream = await chat_service.invoke(chat_request, backgroundTasks)
