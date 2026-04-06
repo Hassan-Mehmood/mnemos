@@ -1,24 +1,24 @@
-import uuid
 from typing import List
+from uuid import UUID, uuid4
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from src.database.models import MemoryStructured
-from src.schemas.memory_extractor_schema import ExtractorOutput
-from src.users.user_schemas import UserMemories
+from src.core.database.models import MemoryEmbedding, MemoryStructured
+from src.memory.schemas.memory_extractor_schema import ExtractorOutput
 
 
 class UserRepository:
     def __init__(self, conn: AsyncSession):
         self.conn = conn
 
-    async def get_memory(self, user_id: uuid.UUID, key: str):
+    async def get_memory(self, user_id: UUID, key: str):
         result = await self.conn.execute(
             select(MemoryStructured).where(
                 MemoryStructured.user_id == user_id,
                 MemoryStructured.key == key,
-                MemoryStructured.superseded_by == None,
+                MemoryStructured.superseded_by.is_(None),
             )
         )
 
@@ -27,11 +27,14 @@ class UserRepository:
         return memory
 
     async def save_memories(
-        self, memories: List[ExtractorOutput], user_id: uuid.UUID
+        self,
+        kv_memories: List[ExtractorOutput],
+        embeddings: List,
+        user_id: UUID,
     ) -> None:
-        for memory in memories:
+        for memory, embedding in zip(kv_memories, embeddings):
             existing = await self.get_memory(user_id, memory.key)
-            new_id = uuid.uuid4()
+            new_id = uuid4()
 
             if existing is not None:
                 existing.superseded_by = new_id
@@ -44,26 +47,41 @@ class UserRepository:
                 value=memory.value,
                 confidence=memory.confidence,
             )
+
             self.conn.add(new_record)
             await self.conn.flush()
 
+            embedding_record = MemoryEmbedding(
+                id=uuid4(),
+                user_id=user_id,
+                memory_id=new_record.id,
+                content=f"{memory.key}: {memory.value}",
+                embedding=embedding,
+            )
+            self.conn.add(embedding_record)
+
         await self.conn.commit()
 
-    async def get_user_memories(self, user_id: uuid.UUID) -> List[UserMemories]:
+    async def get_user_memories(
+        self, user_id: UUID, confidence_threshold: float = 0.7
+    ) -> List[MemoryStructured]:
         result = await self.conn.execute(
             select(MemoryStructured)
-            .where(MemoryStructured.user_id == user_id)
+            .where(
+                MemoryStructured.user_id == user_id,
+                MemoryStructured.superseded_by.is_(None),
+                MemoryStructured.confidence >= confidence_threshold,
+            )
             .order_by(MemoryStructured.created_at.desc())
         )
 
-        memories = result.scalars().all()
+        return list(result.scalars().all())
 
-        return [
-            UserMemories(
-                key=mem.key,
-                value=mem.value,
-                confidence=mem.confidence,
-                superseded_by=mem.superseded_by,
-            )
-            for mem in memories
-        ]
+    async def get_user_memory_embeddings(self, user_id: UUID) -> List[MemoryEmbedding]:
+        result = await self.conn.execute(
+            select(MemoryEmbedding)
+            .options(selectinload(MemoryEmbedding.memory))
+            .where(MemoryEmbedding.user_id == user_id)
+        )
+
+        return list(result.scalars().all())

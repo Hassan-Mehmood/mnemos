@@ -1,10 +1,29 @@
-# from typing import List
-# from pydantic import BaseModel
+from uuid import UUID
 
-import uuid
+from pydantic import EmailStr
 
-from src.schemas.memory_extractor_schema import ExtractorOutput
+from src.base_schema import BaseSchema
 
 
-class UserMemories(ExtractorOutput):
-    superseded_by: uuid.UUID | None = None
+class UserCreate(BaseSchema):
+    name: str
+    email: EmailStr
+    password: str
+
+
+class UserLogin(BaseSchema):
+    email: EmailStr
+    password: str
+
+
+class UserResponse(BaseSchema):
+    id: UUID
+    name: str
+    email: EmailStr
+
+
+class Token(BaseSchema):
+    access_token: str
+    token_type: str
+    email: EmailStr
+    name: str

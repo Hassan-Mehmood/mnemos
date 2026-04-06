@@ -1,10 +1,10 @@
 import uuid
 
-from src.schemas.base_schema import BaseSchema
+from src.base_schema import BaseSchema
 
 
 class ChatInvoke(BaseSchema):
-    chat_id: uuid.UUID | None = None
+    chat_id: uuid.UUID
     user_id: uuid.UUID
     message: str
 

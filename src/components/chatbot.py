@@ -3,9 +3,11 @@ from typing import AsyncGenerator, List
 from openai import OpenAI
 
 from src.chats.chat_enums import ChatMessageDict
-from src.config import get_settings
-from src.users.user_schemas import UserMemories
+from src.core.config import get_settings
+from src.memory.schemas.memory_extractor_schema import ExtractorOutput
 from src.utils.system_prompts import CHAT_PROMPT
+
+settings = get_settings()
 
 
 class Chatbot:
@@ -16,25 +18,31 @@ class Chatbot:
         # TODO: Consider a new approach for this.
         # Todo: There should an invoke method that can be called from anywhere with prompts included
         response = self.client.responses.create(
-            model="gpt-4o-mini-2024-07-18", input=message
+            model=settings.CHAT_BOT_MODEL, input=message
         )
 
         return response.output_text
 
     async def stream(
-        self, history: list[ChatMessageDict], factual_memory: List[UserMemories]
+        self,
+        history: list[ChatMessageDict],
+        factual_memory: List[ExtractorOutput],
+        semantic_memory: List[str] = [],
     ) -> AsyncGenerator[str, None]:
         intructions = CHAT_PROMPT.format(
             factual_memory="\n".join(
                 [
-                    f'Key: {mem.key} | Value: "{mem.value}" (confidence: {mem.confidence}, superseded_by: {mem.superseded_by})'
+                    f'Key: {mem.key} | Value: "{mem.value}" (confidence: {mem.confidence})'
                     for mem in factual_memory
                 ]
             ),
+            semantic_memory="\n".join(semantic_memory) if semantic_memory else "None",
         )
 
+        print(f"Instructions: {intructions}")
+
         stream = self.client.responses.create(
-            model="gpt-4o-mini-2024-07-18",
+            model=settings.CHAT_BOT_MODEL,
             instructions=intructions,
             input=history,  # type: ignore
             stream=True,

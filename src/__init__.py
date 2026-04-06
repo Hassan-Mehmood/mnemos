@@ -4,7 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.chats.chat_router import router as chat_router
-from src.database.database import sessionmanager
+from src.core.database.database import sessionmanager
+from src.memory.long_term_memory import LongTermSemanticMemory
+from src.users.user_router import router as auth_router
 
 
 @asynccontextmanager
@@ -12,6 +14,7 @@ async def lifespan(app: FastAPI):
     """
     Function that handles startup and shutdown events.
     """
+    LongTermSemanticMemory()
     yield
     if sessionmanager._engine is not None:
         # Close the DB connection
@@ -32,7 +35,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 app.include_router(chat_router)
+app.include_router(auth_router)
 
 
 @app.get("/health")

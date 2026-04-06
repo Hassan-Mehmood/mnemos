@@ -4,9 +4,9 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database.database import sessionmanager
-from src.database.db_enums import MessageSender
-from src.database.models import Chat, ChatMessage
+from src.core.database.database import sessionmanager
+from src.core.database.db_enums import MessageSender
+from src.core.database.models import Chat, ChatMessage
 
 
 class ChatRepository:
@@ -20,8 +20,16 @@ class ChatRepository:
         await self.conn.refresh(new_chat)
         return new_chat.id
 
-    async def get_all(self):
-        stmt = select(Chat).order_by(Chat.created_at.asc())
+    async def create_chat_with_id(
+        self, id: uuid.UUID, user_id: uuid.UUID, name: str
+    ) -> uuid.UUID:
+        new_chat = Chat(id=id, user_id=user_id, name=name)
+        self.conn.add(new_chat)
+        await self.conn.commit()
+        return id
+
+    async def get_all(self, user_id: uuid.UUID):
+        stmt = select(Chat).where(Chat.user_id == user_id).order_by(Chat.created_at.asc())
 
         result = await self.conn.execute(stmt)
 
@@ -39,6 +47,22 @@ class ChatRepository:
         messages = result.scalars().all()
 
         return messages
+
+    async def save_user_message(self, chat_id: uuid.UUID, content: str) -> uuid.UUID:
+        message = ChatMessage(
+            chat_id=chat_id, content=content, sender=MessageSender.USER
+        )
+        self.conn.add(message)
+        await self.conn.commit()
+        await self.conn.refresh(message)
+        return message.id
+
+    async def save_bot_message(self, chat_id: uuid.UUID, content: str) -> None:
+        async with sessionmanager.session() as conn:
+            conn.add(
+                ChatMessage(chat_id=chat_id, content=content, sender=MessageSender.BOT)
+            )
+            await conn.commit()
 
     async def save_user_bot_exchange(
         self, chat_id: uuid.UUID, user_message: str, bot_response: str

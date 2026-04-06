@@ -1,6 +1,6 @@
 from typing import TypedDict
 
-from src.database.db_enums import MessageSender
+from src.core.database.db_enums import MessageSender
 
 
 class ChatMessageDict(TypedDict):
